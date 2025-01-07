@@ -44,3 +44,6 @@ npm run build
 ```sh
 npm run lint
 ```
+
+
+const apiBaseURL = "http://3.36.140.131:8000"; // FastAPI 서버 주소

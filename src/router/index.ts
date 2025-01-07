@@ -15,6 +15,18 @@ const router = createRouter({
         }
       ]
     },
+    {
+      path: '/admin',
+      name: 'admin-layout',
+      component: () => import('@/layouts/AdminLayout.vue'),
+      children: [
+        {
+          path: 'dashboard',
+          name: 'admin-dashboard',
+          component: () => import('@/views/admin/Dashboard.vue')
+        }
+      ]
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
