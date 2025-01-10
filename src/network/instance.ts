@@ -1,7 +1,6 @@
 import axios from 'axios'
 
-const adminBaseURL = import.meta.env.VITE_ADMIN_URL
-console.log(adminBaseURL)
+const adminBaseURL = 'http://3.36.140.131:8000'
 export const adminInstance = () => {
   return axios.create({
     baseURL: adminBaseURL,
