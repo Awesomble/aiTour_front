@@ -2,7 +2,7 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import Markdown from 'vue3-markdown-it'
 
-const API_BASE_URL = 'https://aitour-api.awesomble.com:8000/openai'
+const API_BASE_URL = 'https://aitour-api.awesomble.com/openai'
 const threadId = ref<string | null>(null)
 const message = ref<string>('')
 const responses = ref<{ id: number; content: string }[]>([])
