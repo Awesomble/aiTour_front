@@ -13,7 +13,7 @@ const golbalStore = useGlobalStore()
       <v-app-bar-nav-icon @click="golbalStore.setNavi(!golbalStore.isNavigation)"></v-app-bar-nav-icon>
     </template>
 
-    <v-app-bar-title>Awesomble</v-app-bar-title>
+    <v-app-bar-title>AITour</v-app-bar-title>
 
     <v-spacer></v-spacer>
 

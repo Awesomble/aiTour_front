@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue'
-import Markdown from 'vue3-markdown-it'
 
-const API_BASE_URL = 'https://aitour-api.awesomble.com/openai'
+// const API_BASE_URL = 'https://aitour-api.awesomble.com/openai'
+const API_BASE_URL = 'http://3.36.140.131:8000/openai'
 const threadId = ref<string | null>(null)
 const message = ref<string>('')
 const responses = ref<{ id: number; content: string }[]>([])
@@ -70,8 +70,8 @@ onBeforeMount(() => {
   <v-container>
     <v-row>
       <v-col cols="12">
-        <input v-model="message" placeholder="Enter your message" />
-        <v-btn @click="sendMessage">Send</v-btn>
+        <v-textarea rows="2" v-model="message" placeholder="Enter your message" />
+        <v-btn class="ml-4" @click="sendMessage">Send</v-btn>
       </v-col>
     </v-row>
     <v-row>
