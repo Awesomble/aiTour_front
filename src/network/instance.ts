@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const adminBaseURL = 'http://3.36.140.131:8000'
+// const adminBaseURL = 'http://3.36.140.131:8000'
+const adminBaseURL = 'https://aitour-api.awesomble.com'
 export const adminInstance = () => {
   return axios.create({
     baseURL: adminBaseURL,

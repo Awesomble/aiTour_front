@@ -1,5 +1,4 @@
 import { adminInstance } from '@/network/instance'
-import { RouteParamValue } from 'vue-router'
 
 // Axios 인스턴스를 미리 생성
 const instance = adminInstance()
