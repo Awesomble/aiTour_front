@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue'
 
-// const API_BASE_URL = 'https://aitour-api.awesomble.com/openai'
-const API_BASE_URL = 'http://3.36.140.131/openai'
+const API_BASE_URL = 'https://aitour-api.awesomble.com/openai'
+// const API_BASE_URL = 'http://3.36.140.131/openai'
 const threadId = ref<string | null>(null)
 const message = ref<string>('')
 const responses = ref<{ id: number; content: string }[]>([])
