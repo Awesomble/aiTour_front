@@ -38,7 +38,7 @@ const drawer = ref(true)
         :to="{name: 'admin-hashtag'}"
         exact
       />
-      <a href="http://3.36.140.131:8000/places/download" target="_blank">
+      <a href="https://aitour-api.awesomble.com/places/download" target="_blank">
       <v-list-item
         title="Download"
         value="Download"
