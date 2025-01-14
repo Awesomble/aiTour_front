@@ -1,6 +1,5 @@
 import { ref, type Ref } from 'vue'
 import { defineStore } from 'pinia'
-import VueCookies from 'vue-cookies'
 
 const useGlobalStore = defineStore('global', () => {
   const isNavigation: Ref<boolean> = ref(false)

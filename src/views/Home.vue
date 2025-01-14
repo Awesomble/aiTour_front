@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeMount, ref } from 'vue'
-import VueCookies from 'vue-cookies'
+import Cookies from 'js-cookie'
 import { useGlobalStore } from '@/store'
 import { GoogleMap, Marker } from 'vue3-google-map'
 
@@ -46,8 +46,8 @@ const init = async () => {
 }
 const GPSInter = ref<any>(null)
 const setGPS = () => {
-  const lat = VueCookies.get('lat')
-  const long = VueCookies.get('long')
+  const lat = Cookies.get('lat')
+  const long = Cookies.get('long')
   if (lat && long) golbalStore.setGPS(lat, long)
 }
 
