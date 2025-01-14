@@ -45,30 +45,36 @@ const init = async () => {
   // });
 }
 const GPSInter = ref<any>(null)
+const center = ref({ lat: 37.5663, lng: 126.9779 })
+const zoom = ref(15)
 const setGPS = () => {
   const lat = Cookies.get('lat')
   const long = Cookies.get('long')
-  if (lat && long) golbalStore.setGPS(lat, long)
+  if (lat && long) golbalStore.setGPS(Number(lat), Number(long))
+  else {
+    golbalStore.setGPS(golbalStore.lat, Number(golbalStore.long)+0.001)
+  }
 }
-
+const myLocationCall = () => {
+  if (golbalStore.lat && golbalStore.long) {
+    center.value = { lat: golbalStore.lat, lng: golbalStore.long }
+  }
+}
 onBeforeMount(() => {
-
   nextTick(() => {
     // init()
     if (!GPSInter.value) {
       GPSInter.value = setInterval(() => {
         setGPS()
-      }, 1000)
+      }, 3000)
     }
   })
 })
-const center = ref({ lat: 37.5663, lng: 126.9779 })
-const zoom = ref(15)
 </script>
 
 <template>
   <v-container class="pa-0 h-100">
-<!--    <gmp-map :center="center" :zoom="zoom" map-id="DEMO_MAP_ID" />-->
+    <!--    <gmp-map :center="center" :zoom="zoom" map-id="DEMO_MAP_ID" />-->
     <GoogleMap
       api-key="AIzaSyByb_XcWvlXKOerQ84vhmodfpI1wEkOjH0"
       class="gmp-map"
@@ -77,6 +83,11 @@ const zoom = ref(15)
     >
       <Marker :options="{ position: center }" />
     </GoogleMap>
+    <v-btn class="btn-floating"
+           icon="mdi-image-filter-center-focus"
+           color="primary"
+           @click="myLocationCall"
+    />
   </v-container>
 </template>
 
@@ -87,5 +98,17 @@ const zoom = ref(15)
   .gm-style-mtc-bbw {
     display: none;
   }
+  .gmnoprint {
+    display: none !important;
+  }
+  .gm-fullscreen-control {
+    display: none !important;
+  }
+}
+.btn-floating {
+  position: fixed;
+  right: 30px;
+  bottom: 80px;
+  z-index: 99;
 }
 </style>
