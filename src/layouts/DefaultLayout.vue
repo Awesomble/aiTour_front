@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Header from '@/components/common/Header.vue'
+import Bottom from '@/components/common/Bottom.vue'
 import Navigation from '@/components/common/Navigation.vue'
 </script>
 
@@ -7,10 +8,16 @@ import Navigation from '@/components/common/Navigation.vue'
   <Header />
   <Navigation />
   <v-main>
-    <router-view v-slot="{ Component, route }">
-      <component :is="Component" :key="route.name" />
+    <router-view v-slot="{ Component }">
+      <keep-alive>
+        <component :is="Component" />
+      </keep-alive>
     </router-view>
+<!--    <router-view v-slot="{ Component, route }">-->
+<!--      <component v-if="!route.meta.keepAlive" :is="Component" />-->
+<!--    </router-view>-->
   </v-main>
+  <Bottom />
 </template>
 
 <style scoped lang='scss'>

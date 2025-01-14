@@ -12,7 +12,7 @@ export const vuetify = createVuetify({
         themes: {
             light: {
                 colors: {
-                    primary: '#41b883',
+                    primary: '#1483C2',
                     background: '#fff',
                     error: '#d63031',
                     info: '#0984e3',
@@ -20,6 +20,9 @@ export const vuetify = createVuetify({
                     success: '#00cec9',
                     surface: '#6c5ce7',
                     warning: '#2d3436',
+                    gray: '#A0AEB5',
+                    white: '#ffffff',
+                    black: '#000000',
                 },
                 dark: false,
                 variables: {},

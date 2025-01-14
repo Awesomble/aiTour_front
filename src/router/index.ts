@@ -11,12 +11,26 @@ const router = createRouter({
         {
           path: '/',
           name: 'home',
-          component: () => import('@/views/Home.vue')
+          component: () => import('@/views/Home.vue'),
+          meta: {
+            keepAlive: true
+          }
         },
         {
           path: '/tourPlanner',
           name: 'tour-planner',
-          component: () => import('@/views/TourPlanner.vue')
+          component: () => import('@/views/TourPlanner.vue'),
+          meta: {
+            keepAlive: true
+          }
+        },
+        {
+          path: '/myHome',
+          name: 'my-home',
+          component: () => import('@/views/my/MyHome.vue'),
+          meta: {
+            keepAlive: true
+          }
         }
       ]
     },

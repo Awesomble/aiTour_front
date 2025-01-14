@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref } from 'vue'
+import { onBeforeMount, ref } from 'vue'
+
 
 // const API_BASE_URL = 'https://aitour-api.awesomble.com/openai'
-const API_BASE_URL = 'http://3.36.140.131:8000/openai'
+const API_BASE_URL = 'http://3.36.140.131:8080/openai'
 const threadId = ref<string | null>(null)
 const message = ref<string>('')
 const responses = ref<{ id: number; content: string }[]>([])
@@ -19,6 +20,7 @@ const createThread = async () => {
     })
     const data = await response.json()
     threadId.value = data.thread_id
+    localStorage.threadId = threadId.value
     console.log('Thread created:', threadId.value)
   } catch (error) {
     console.error('Error creating thread:', error)
@@ -60,8 +62,8 @@ const sendMessage = async () => {
   }
 }
 onBeforeMount(() => {
-  const threadId = localStorage.threadId
-  if (threadId) threadId.value = threadId
+  const newThreadId = localStorage.threadId
+  if (newThreadId) threadId.value = newThreadId
   else createThread()
 })
 </script>
@@ -71,7 +73,7 @@ onBeforeMount(() => {
     <v-row>
       <v-col cols="12">
         <v-textarea rows="2" v-model="message" placeholder="Enter your message" />
-        <v-btn class="ml-4" @click="sendMessage">Send</v-btn>
+        <v-btn class="ml-4" @click="sendMessage" :disabled="!threadId">Send</v-btn>
       </v-col>
     </v-row>
     <v-row>
