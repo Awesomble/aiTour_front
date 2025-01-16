@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Ref, ref, defineEmits, defineProps, watch, UnwrapRef, onMounted, nextTick } from 'vue'
+import dayjs from 'dayjs'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -43,9 +44,12 @@ const guestCategories = ref<object[]>([
 
 watch(
   () => props.isShow,
-  (newVal) => {
+  async (newVal) => {
     dialog.value = newVal
-    if (newVal) makePicker()
+    if (newVal) {
+      await nextTick() // DOM이 업데이트된 후
+      initializeMobiscroll()
+    }
   }
 )
 const increment = (counter: number) => {
@@ -69,28 +73,33 @@ const createCall = async () => {
 }
 let mobiInstance = ref<any>(null)
 const dateInput = ref<HTMLInputElement | null>(null)
-const makePicker = () => {
-  nextTick(() => {
-    // Mobiscroll 초기화
-    const inputElement = document.querySelector('#dateInput')
-    if (inputElement) {
-      mobiInstance.value = mobiscroll.datepicker(inputElement, {
-        controls: ['calendar'],
-        select: 'range',
-        display: 'inline',
-        touchUi: true,
-        theme: 'ios',
-        showOnClick: false,
-        showOnFocus: false,
-        onChange: function (args) {
-          console.log(args)
-          iptRange.value = args?.valueText
-        }
-      })
-    }
-  })
+const initializeMobiscroll = () => {
+  if (mobiInstance.value) {
+    mobiInstance.value.destroy()
+  }
+
+  const inputElement = document.querySelector('#dateInput')
+  if (inputElement) {
+    mobiInstance.value = mobiscroll.datepicker(inputElement, {
+      controls: ['calendar'],
+      select: 'range',
+      display: 'inline',
+      touchUi: true,
+      theme: 'ios',
+      min: dayjs().format('YYYY-MM-DD'),
+      showOnClick: false,
+      showOnFocus: false,
+      onChange: function (args) {
+        iptRange.value = args?.valueText
+      }
+    })
+  } else {
+    console.error('Mobiscroll input element not found')
+  }
 }
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
+  initializeMobiscroll()
 })
 </script>
 
@@ -151,12 +160,7 @@ onMounted(() => {
               <div class="text-caption">13세 이상</div>
             </v-col>
             <v-col cols="8" class="d-flex align-center justify-end">
-              <v-btn
-                icon
-                size="x-small"
-                @click="iptAdults--"
-                :disabled="iptAdults === 1"
-              >
+              <v-btn icon size="x-small" @click="iptAdults--" :disabled="iptAdults === 1">
                 <v-icon>mdi-minus</v-icon>
               </v-btn>
               <span class="mx-2 text-subtitle-1">{{ iptAdults }}</span>
@@ -171,12 +175,7 @@ onMounted(() => {
               <div class="text-caption">2~12세</div>
             </v-col>
             <v-col cols="8" class="d-flex align-center justify-end">
-              <v-btn
-                icon
-                size="x-small"
-                @click="iptChildren--"
-                :disabled="iptChildren === 0"
-              >
+              <v-btn icon size="x-small" @click="iptChildren--" :disabled="iptChildren === 0">
                 <v-icon>mdi-minus</v-icon>
               </v-btn>
               <span class="mx-2 text-subtitle-1">{{ iptChildren }}</span>
@@ -191,12 +190,7 @@ onMounted(() => {
               <div class="text-caption">2세 미만</div>
             </v-col>
             <v-col cols="8" class="d-flex align-center justify-end">
-              <v-btn
-                icon
-                size="x-small"
-                @click="iptInfants--"
-                :disabled="iptInfants === 0"
-              >
+              <v-btn icon size="x-small" @click="iptInfants--" :disabled="iptInfants === 0">
                 <v-icon>mdi-minus</v-icon>
               </v-btn>
               <span class="mx-2 text-subtitle-1">{{ iptInfants }}</span>
