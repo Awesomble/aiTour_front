@@ -23,23 +23,6 @@ const iptInfants = ref<number>(0)
 const rules = ref({
   required: (value: string) => !!value || 'Required.'
 })
-const guestCategories = ref<object[]>([
-  {
-    label: '성인',
-    description: '13세 이상',
-    counter: 1
-  },
-  {
-    label: '어린이',
-    description: '2~12세',
-    counter: 0
-  },
-  {
-    label: '유아',
-    description: '2세 미만',
-    counter: 0
-  }
-])
 
 watch(
   () => props.isShow,
@@ -51,13 +34,6 @@ watch(
     }
   }
 )
-const increment = (counter: number) => {
-  console.log(counter)
-  counter++
-}
-const decrement = (counter: number) => {
-  if (counter > 0) counter--
-}
 const close = () => {
   emit('close')
 }
@@ -123,34 +99,16 @@ onMounted(async () => {
             <v-col>
               <v-text-field
                 ref="dateInput"
-                label="Range"
                 variant="outlined"
                 :rules="[rules.required]"
                 v-model="iptRange"
                 clearable2
                 readonly
+                placeholder="Select your travel dates"
               />
               <input id="dateInput" style="visibility: hidden" />
               <!--              <v-btn icon="mdi-human-male-female-child" size="x-large" />-->
               <!--              <v-btn icon="mdi-human-male-female" size="x-large" />-->
-            </v-col>
-          </v-row>
-          <v-row dense>
-            <v-col cols="12" md="4" sm="6">
-              <v-text-field
-                label="Amount"
-                variant="outlined"
-                model-value="10.00"
-                prefix="$"
-                :counter="10"
-                :rules="[rules.required]"
-                v-model="iptAmount"
-                clearable
-                @keyup.enter="createCall"
-              />
-              <small class="text-caption text-medium-emphasis"
-                >*Enter the total cost per person.</small
-              >
             </v-col>
           </v-row>
           <v-row dense>
@@ -196,6 +154,22 @@ onMounted(async () => {
               <v-btn icon size="x-small" @click="iptInfants++">
                 <v-icon>mdi-plus</v-icon>
               </v-btn>
+            </v-col>
+          </v-row>
+          <v-row dense class="mt-8">
+            <v-col cols="12" md="4" sm="6">
+              <v-text-field
+                variant="outlined"
+                model-value="10.00"
+                prefix="$"
+                prepend-inner-icon="mdi-currency-usd"
+                :counter="10"
+                :rules="[rules.required]"
+                v-model="iptAmount"
+                clearable
+                @keyup.enter="createCall"
+                placeholder="Enter the total travel cost"
+              />
             </v-col>
           </v-row>
         </v-form>
