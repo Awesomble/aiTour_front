@@ -13,7 +13,6 @@ const props = defineProps({
     required: true
   }
 })
-
 const formRef = ref<HTMLFormElement | null>(null)
 const dialog = ref<boolean>(true)
 const iptRange = ref<string | null>(null)
