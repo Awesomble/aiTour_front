@@ -2,7 +2,7 @@
 import { nextTick, onBeforeMount, ref } from 'vue'
 import Cookies from 'js-cookie'
 import { useGlobalStore } from '@/store'
-import { GoogleMap, Marker } from 'vue3-google-map'
+import { GoogleMap, CustomMarker, Marker } from 'vue3-google-map'
 
 const golbalStore = useGlobalStore()
 const init = async () => {
@@ -52,7 +52,7 @@ const setGPS = () => {
   const long = Cookies.get('long')
   if (lat && long) golbalStore.setGPS(Number(lat), Number(long))
   else {
-    golbalStore.setGPS(golbalStore.lat, Number(golbalStore.long)+0.001)
+    golbalStore.setGPS(golbalStore.lat, Number(golbalStore.long) + 0.001)
   }
 }
 const myLocationCall = () => {
@@ -81,12 +81,19 @@ onBeforeMount(() => {
       :center="center"
       :zoom="zoom"
     >
-      <Marker :options="{ position: center }" />
+      <CustomMarker :options="{ position: center, anchorPoint: 'CENTER_CENTER' }">
+        <div class="element">
+          <div class="pulse" />
+          <div class="marker" />
+        </div>
+      </CustomMarker>
+<!--      <Marker :options="{ position: center }" />-->
     </GoogleMap>
-    <v-btn class="btn-floating"
-           icon="mdi-image-filter-center-focus"
-           color="primary"
-           @click="myLocationCall"
+    <v-btn
+      class="btn-floating"
+      icon="mdi-image-filter-center-focus"
+      color="primary"
+      @click="myLocationCall"
     />
   </v-container>
 </template>
@@ -110,5 +117,57 @@ onBeforeMount(() => {
   right: 30px;
   bottom: 80px;
   z-index: 99;
+}
+.element {
+  position: relative;
+}
+
+.pulse {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 30px;
+  width: 30px;
+  z-index: 10;
+  border: 5px solid #1483C2;
+  border-radius: 70px;
+  animation: pulse 1s ease-out infinite;
+}
+
+.marker {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background-color: #1483C2;
+}
+
+@keyframes pulse {
+  0% {
+    -webkit-transform: scale(0);
+    opacity: 0.0;
+  }
+
+  25% {
+    -webkit-transform: scale(0.1);
+    opacity: 0.1;
+  }
+
+  50% {
+    -webkit-transform: scale(0.5);
+    opacity: 0.3;
+  }
+
+  75% {
+    -webkit-transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  100% {
+    -webkit-transform: scale(1);
+    opacity: 0.0;
+  }
 }
 </style>

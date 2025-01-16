@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, defineEmits, defineProps, watch, UnwrapRef, onMounted, nextTick } from 'vue'
 import dayjs from 'dayjs'
+import { vMaska } from 'maska/vue'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -23,6 +24,13 @@ const iptInfants = ref<number>(0)
 const rules = ref({
   required: (value: string) => !!value || 'Required.'
 })
+const maskaOptions = {
+  mask: '9,99#',
+  tokens: {
+    '9': { pattern: /[0-9]/, repeated: true },
+  },
+  reversed: true,
+}
 
 watch(
   () => props.isShow,
@@ -105,6 +113,7 @@ onMounted(async () => {
                 clearable2
                 readonly
                 placeholder="Select your travel dates"
+                v-if="false"
               />
               <input id="dateInput" style="visibility: hidden" />
               <!--              <v-btn icon="mdi-human-male-female-child" size="x-large" />-->
@@ -167,7 +176,9 @@ onMounted(async () => {
                 :rules="[rules.required]"
                 v-model="iptAmount"
                 clearable
+                type="tel"
                 @keyup.enter="createCall"
+                v-maska="maskaOptions"
                 placeholder="Enter the total travel cost"
               />
             </v-col>
