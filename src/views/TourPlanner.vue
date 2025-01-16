@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue'
-
+import MyPlanDialog from '@/components/dialogs/MyPlan.vue'
 
 const API_BASE_URL = 'https://aitour-api.awesomble.com/openai'
 // const API_BASE_URL = 'http://3.36.140.131:8080/openai'
@@ -8,6 +8,8 @@ const threadId = ref<string | null>(null)
 const message = ref<string>('')
 const responses = ref<{ id: number; content: string }[]>([])
 const responsesContent = ref<any>('')
+const iptPlan = ref<string | null>(null)
+const myPlanDialog = ref<boolean>(false)
 
 // 스레드 생성 함수
 const createThread = async () => {
@@ -29,7 +31,7 @@ const createThread = async () => {
 
 // 메시지 전송 및 응답 수신 함수
 const sendMessage = async () => {
-  if (!threadId.value || !message.value) {
+  if (!threadId.value || !iptPlan.value) {
     console.error('Thread ID or message is missing')
     return
   }
@@ -38,7 +40,7 @@ const sendMessage = async () => {
     responsesContent.value = ''
     const eventSource = new EventSource(
       `${API_BASE_URL}/message?thread_id=${threadId.value}&message=${encodeURIComponent(
-        message.value
+        `${iptPlan.value}의 내용대로 서울을 여행할 수 있는 코스 생성해줘`
       )}`
     )
 
@@ -61,10 +63,15 @@ const sendMessage = async () => {
     console.error('Error sending message:', error)
   }
 }
+const updatePlanCall = (plan: string) => {
+  iptPlan.value = plan
+  sendMessage()
+}
 onBeforeMount(() => {
   const newThreadId = localStorage.threadId
   if (newThreadId) threadId.value = newThreadId
   else createThread()
+  if (!iptPlan.value) myPlanDialog.value = true
 })
 </script>
 
@@ -72,8 +79,7 @@ onBeforeMount(() => {
   <v-container>
     <v-row>
       <v-col cols="12">
-        <v-textarea rows="2" v-model="message" placeholder="Enter your message" />
-        <v-btn class="ml-4" @click="sendMessage" :disabled="!threadId">Send</v-btn>
+        {{ iptPlan }}
       </v-col>
     </v-row>
     <v-row>
@@ -81,11 +87,26 @@ onBeforeMount(() => {
         <div v-html="responsesContent" />
       </v-col>
     </v-row>
+
+    <v-btn
+      class="btn-floating"
+      icon="mdi-airplane"
+      color="primary"
+      @click="myPlanDialog = true"
+    />
   </v-container>
+  <MyPlanDialog :is-show="myPlanDialog" @close="myPlanDialog = false" @update="updatePlanCall" />
 </template>
 
 <style lang="scss">
 // ----------------  THE BASICS
+
+.btn-floating {
+  position: fixed;
+  right: 30px;
+  bottom: 80px;
+  z-index: 99;
+}
 
 @import url('https://fonts.googleapis.com/css?family=Oswald|Roboto:400,700');
 
