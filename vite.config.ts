@@ -63,5 +63,13 @@ export default defineConfig({
   css: {},
   server: {
     port: 3333
-  }
+  },
+  optimizeDeps: {
+    include: ['dayjs'],
+  },
+  build: {
+    rollupOptions: {
+      external: ['dayjs'], // dayjs를 외부화
+    },
+  },
 })
