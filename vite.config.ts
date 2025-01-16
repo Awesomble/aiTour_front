@@ -4,13 +4,15 @@ import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { VitePWA } from 'vite-plugin-pwa'
+import path from 'path'
 
 import { join, resolve } from 'node:path'
 export default defineConfig({
   mode: 'development',
   resolve: {
     alias: {
-      '@': join(__dirname, './src')
+      '@': join(__dirname, './src'),
+      dayjs: path.resolve(__dirname, 'node_modules/dayjs'),
     }
   },
   envPrefix: 'VITE_',
