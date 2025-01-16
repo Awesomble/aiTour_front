@@ -13,7 +13,7 @@ export default defineConfig({
     alias: {
       '@': join(__dirname, './src'),
       dayjs: path.resolve(__dirname, 'node_modules/dayjs'),
-      'maska/vue': path.resolve(__dirname, 'node_modules/maska/vue'),
+      // 'maska/vue': path.resolve(__dirname, 'node_modules/maska/vue'),
     }
   },
   envPrefix: 'VITE_',
@@ -67,9 +67,6 @@ export default defineConfig({
   server: {
     port: 3333
   },
-  optimizeDeps: {
-    include: ['maska'],
-  }
   // optimizeDeps: {
   //   include: ['dayjs'],
   // },
