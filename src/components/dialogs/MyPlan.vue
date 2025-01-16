@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, defineEmits, defineProps, watch, UnwrapRef, onMounted, nextTick } from 'vue'
-import dayjs from 'dayjs/index'
+import * as dayjs from 'dayjs'
 
 const emit = defineEmits<{
   (e: 'close'): void
