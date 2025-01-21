@@ -13,7 +13,7 @@ export default defineConfig({
     alias: {
       '@': join(__dirname, './src'),
       dayjs: path.resolve(__dirname, 'node_modules/dayjs'),
-      // 'maska/vue': path.resolve(__dirname, 'node_modules/maska/vue'),
+      'maska/vue': path.resolve(__dirname, 'node_modules/maska/vue'),
     }
   },
   envPrefix: 'VITE_',
@@ -70,9 +70,9 @@ export default defineConfig({
   // optimizeDeps: {
   //   include: ['dayjs'],
   // },
-  // build: {
-  //   rollupOptions: {
-  //     external: ['dayjs'], // dayjs를 외부화
-  //   },
-  // },
+  build: {
+    rollupOptions: {
+      external: ['dayjs', 'maska/vue'], // dayjs를 외부화
+    },
+  },
 })
