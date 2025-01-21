@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, defineEmits, defineProps, watch, UnwrapRef, onMounted, nextTick } from 'vue'
+import { ref, defineEmits, defineProps, watch, reactive, onMounted, nextTick } from 'vue'
 import dayjs from 'dayjs'
-import { vMaska } from 'maska/vue'
-// import maska from 'maska'
+import { vMaska } from "maska/vue"
+import type { MaskInputOptions } from "maska"
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -26,13 +26,13 @@ let mobiInstance = ref<any>(null)
 const rules = ref({
   required: (value: string) => !!value || 'Required.'
 })
-const maskaOptions = {
+const maskaOptions = reactive<MaskInputOptions>({
   mask: '9,99#',
   tokens: {
     '9': { pattern: /[0-9]/, repeated: true }
   },
   reversed: true
-}
+})
 
 watch(
   () => props.isShow,

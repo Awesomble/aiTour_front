@@ -229,12 +229,12 @@ onBeforeUnmount(() => {})
     </v-row>
     <v-row>
       <v-col cols="12">
-        <v-row
+        <v-slide-x-reverse-transition group>
+          <v-row
           v-for="(item, index) in realData.filter((itm) => itm.day === `Day ${selectedDate}`)"
           :key="index"
           align="start"
           class="mb-2 align-center"
-          transition="slide-x-reverse-transition"
         >
           <!-- 좌측 아이콘 -->
           <v-col cols="2" class="text-center">
@@ -259,6 +259,7 @@ onBeforeUnmount(() => {})
             </v-card>
           </v-col>
         </v-row>
+        </v-slide-x-reverse-transition>
       </v-col>
     </v-row>
     <v-row v-if="false">
