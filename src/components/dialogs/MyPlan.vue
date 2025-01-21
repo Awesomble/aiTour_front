@@ -90,6 +90,7 @@ const initializeMobiscroll = () => {
       min: dayjs().format('YYYY-MM-DD'),
       showOnClick: false,
       showOnFocus: false,
+      maxRange: 7,
       onChange: function (args) {
         iptRange.value = args?.valueText
       }

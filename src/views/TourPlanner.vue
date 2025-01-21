@@ -14,6 +14,7 @@ const iptPlan = ref<any | null>(null)
 const myPlanDialog = ref<boolean>(false)
 const dateList = ref<string[]>([])
 const selectedDate = ref<number | null>(null)
+const loading = ref<boolean>(false)
 // 스레드 생성 함수
 const createThread = async () => {
   try {
@@ -41,6 +42,7 @@ const sendMessage = async () => {
   }
   try {
     responsesContent.value = ''
+    loading.value = true
     const eventSource = new EventSource(
       `${API_BASE_URL}/message?thread_id=${threadId.value}&message=${encodeURIComponent(
         `여행가간: ${iptPlan.value.range} 여행총비용: ${
@@ -88,6 +90,7 @@ const sendMessage = async () => {
         id: responses.value.length + 1,
         content
       })
+      loading.value = false
     }
 
     // 에러 처리
@@ -179,7 +182,7 @@ onBeforeUnmount(() => {})
 </script>
 
 <template>
-  <v-container>
+  <v-container bg-color="#f8f8f8">
     <v-row>
       <v-col cols="12" class="d-flex justify-center ga-2">
         <v-chip v-if="iptPlan?.range" prepend-icon="mdi-calendar-range" variant="elevated">{{
@@ -227,18 +230,26 @@ onBeforeUnmount(() => {})
         >
       </v-btn-group>
     </v-row>
-    <v-row>
+    <v-row class="plan-list">
       <v-col cols="12">
+        <v-skeleton-loader
+          v-if="loading"
+          class="mx-auto"
+          elevation="1"
+          color="white"
+          type="article"
+        ></v-skeleton-loader>
         <v-slide-x-reverse-transition group>
           <v-row
           v-for="(item, index) in realData.filter((itm) => itm.day === `Day ${selectedDate}`)"
           :key="index"
           align="start"
-          class="mb-2 align-center"
+          class="mb-1 align-center plan"
+          :class="{'last': index === realData.filter((itm) => itm.day === `Day ${selectedDate}`) - 1}"
         >
           <!-- 좌측 아이콘 -->
-          <v-col cols="2" class="text-center">
-            <v-avatar class="icon-circle" color="red lighten-2">
+          <v-col cols="2" class="text-center icon-container">
+            <v-avatar class="icon-circle timeline-avatar" color="red lighten-2">
               <span class="icon-text">{{ item.category.substr(0, 1).toUpperCase() }}</span>
             </v-avatar>
           </v-col>
@@ -291,41 +302,35 @@ onBeforeUnmount(() => {})
   z-index: 99;
 }
 
-.timeline-item1 {
-  padding: 3em 2em 2em;
+/* 아이콘 컨테이너 스타일 */
+.icon-container {
+  display: flex;
+  justify-content: center;
   position: relative;
-  color: rgba(black, 0.7);
-
-  p {
-    font-size: 1rem;
-  }
-
-  &::before {
-    content: attr(date-is);
-    position: absolute;
-    left: 2em;
+  .timeline-avatar {
     font-weight: bold;
-    top: 1em;
-    display: block;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 700;
-    font-size: 0.785rem;
+    color: white;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: unset;
+    z-index: 1;
   }
-
   &::after {
-    width: 10px;
-    height: 10px;
-    display: block;
-    top: 1em;
+    content: "";
     position: absolute;
-    left: -7px;
-    border-radius: 10px;
-    content: '';
-    background: white;
+    width: 1px;
+    background-color: #ccc;
+    left: 50%;
+    top: 60px;
+    height: 150px;
+    z-index: 0;
+    transform: translateX(-50%);
   }
-
-  &:last-child {
-    //border-image: linear-gradient(to bottom,#000 60%, #00ff00, 0)) 1 100%;
-  }
+}
+.plan-list .plan:last-child .icon-container .timeline-avatar::after {
+  display: none !important;
 }
 </style>
