@@ -72,7 +72,7 @@ export default defineConfig({
   // },
   build: {
     rollupOptions: {
-      external: ['maska/vue'], // dayjs를 외부화
+      // external: ['maska/vue'], // dayjs를 외부화
     },
   },
 })
