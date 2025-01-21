@@ -8,3 +8,13 @@
 // @use 'vuetify' with (
 //   $color-pack: false
 // );
+
+
+// mobiscroll
+.mbsc-ios.mbsc-datepicker-inline {
+  border: 0;
+  border-radius: 15px;
+}
+.mbsc-datepicker-tab-wrapper {
+  border-radius: 15px;
+}

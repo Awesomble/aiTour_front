@@ -30,7 +30,8 @@ const rules = ref({
   required: (value: string) => !!value || 'Required.'
 })
 const removeHashtag = (id: number) => {
-  const idx = hasHashtags.value.findIndex((tag) => tag.hashtag_id === id)
+  const idx = hasHashtags.value.findIndex((tag) => tag === id)
+  console.log(hasHashtags.value, id, idx)
   if (idx !== -1) {
     hasHashtags.value.splice(idx, 1) // 인덱스 위치에서 1개 항목 제거
   }
@@ -46,7 +47,7 @@ const getPlacesDetail = async () => {
     iptPlaceLongitude.value = res?.data?.longitude
     iptPlaceDescription.value = res?.data?.description
     iptPlaceCost.value = res?.data?.cost
-    res?.data?.hashtags.forEach(itm => {
+    res?.data?.hashtags.forEach((itm) => {
       hasHashtags.value.push(itm.hashtag_id)
     })
   }

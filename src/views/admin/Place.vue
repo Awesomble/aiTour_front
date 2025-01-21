@@ -85,39 +85,6 @@ onBeforeMount(() => {
 
 <template>
   <v-row>
-    <v-col cols="12" v-if="places.length">
-      <v-card title="Place List">
-        <v-card-text>
-          <!-- 검색 필드 -->
-          <v-text-field
-            v-model="iptSearch"
-            label="Search"
-            prepend-inner-icon="mdi-magnify"
-            single-line
-            hide-details
-            class="mb-4"
-          />
-          <v-data-table-virtual
-            :headers="headers"
-            :items="places"
-            :search="iptSearch"
-            dense
-            outlined
-          >
-            <template v-slot:item.place_id="{ item }">
-              <a
-                class="data-table-link"
-                href="javascript:;"
-                @click="goPlaceDetail(item.place_id)"
-              >{{ item.place_id }}</a>
-            </template>
-            <template v-slot:item.action="{ item }">
-              <v-btn density="compact" color="red" @click="delPlace(item.place_id)"> Delete </v-btn>
-            </template>
-          </v-data-table-virtual>
-        </v-card-text>
-      </v-card>
-    </v-col>
     <v-col cols="12">
       <v-card title="Place Add">
         <v-form ref="formRef">
@@ -199,6 +166,39 @@ onBeforeMount(() => {
         <v-card-actions class="justify-center">
           <v-btn variant="tonal" color="white" class="w-25" @click.prevent="addPlace">Add</v-btn>
         </v-card-actions>
+      </v-card>
+    </v-col>
+    <v-col cols="12" v-if="places.length">
+      <v-card :title="`Place List(${places.length})`">
+        <v-card-text>
+          <!-- 검색 필드 -->
+          <v-text-field
+            v-model="iptSearch"
+            label="Search"
+            prepend-inner-icon="mdi-magnify"
+            single-line
+            hide-details
+            class="mb-4"
+          />
+          <v-data-table-virtual
+            :headers="headers"
+            :items="places"
+            :search="iptSearch"
+            dense
+            outlined
+          >
+            <template v-slot:item.place_id="{ item }">
+              <a
+                class="data-table-link"
+                href="javascript:;"
+                @click="goPlaceDetail(item.place_id)"
+              >{{ item.place_id }}</a>
+            </template>
+            <template v-slot:item.action="{ item }">
+              <v-btn density="compact" color="red" @click="delPlace(item.place_id)"> Delete </v-btn>
+            </template>
+          </v-data-table-virtual>
+        </v-card-text>
       </v-card>
     </v-col>
   </v-row>

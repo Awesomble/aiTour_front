@@ -2,10 +2,11 @@
 import { ref, defineEmits, defineProps, watch, UnwrapRef, onMounted, nextTick } from 'vue'
 import dayjs from 'dayjs'
 import { vMaska } from 'maska/vue'
+// import maska from 'maska'
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'update', value: string): void
+  (e: 'update', value: any): void
 }>()
 const props = defineProps({
   isShow: {
@@ -20,15 +21,17 @@ const iptAmount = ref<number | null>(null)
 const iptAdults = ref<number>(1)
 const iptChildren = ref<number>(0)
 const iptInfants = ref<number>(0)
+const dateInput = ref<HTMLInputElement | null>(null)
+let mobiInstance = ref<any>(null)
 const rules = ref({
   required: (value: string) => !!value || 'Required.'
 })
 const maskaOptions = {
   mask: '9,99#',
   tokens: {
-    '9': { pattern: /[0-9]/, repeated: true },
+    '9': { pattern: /[0-9]/, repeated: true }
   },
-  reversed: true,
+  reversed: true
 }
 
 watch(
@@ -44,26 +47,42 @@ watch(
 const close = () => {
   emit('close')
 }
+const clearCall = () => {
+  if (mobiInstance.value) {
+    mobiInstance.value.setVal(null)
+    iptRange.value = null
+  }
+  iptAdults.value = 1;
+  iptChildren.value = 0;
+  iptInfants.value = 0;
+  iptAmount.value = null;
+}
 const createCall = async () => {
   const { valid } = await formRef.value?.validate()
   if (!valid) return
+  console.log(iptAmount.value, typeof iptAmount.value)
   emit(
     'update',
-    `여행가간: ${iptRange.value} 여행총비용: ${iptAmount.value} 여행자수는 어른: ${iptAdults.value} 어린이: ${iptChildren.value} 아기: ${iptInfants.value}`
+    {
+      range: iptRange.value,
+      amount: iptAmount.value,
+      adults: iptAdults.value,
+      children: iptChildren.value,
+      infants: iptInfants.value,
+    }
+    // `여행가간: ${iptRange.value} 여행총비용: ${Number(iptAmount.value?.replace(/,/g, '')) * 1440}원 여행자수는 어른: ${iptAdults.value} 어린이: ${iptChildren.value} 아기: ${iptInfants.value}`
   )
   close()
 }
-let mobiInstance = ref<any>(null)
-const dateInput = ref<HTMLInputElement | null>(null)
 const initializeMobiscroll = () => {
   if (mobiInstance.value) {
     mobiInstance.value.destroy()
   }
-
   const inputElement = document.querySelector('#dateInput')
   if (inputElement) {
     mobiInstance.value = mobiscroll.datepicker(inputElement, {
       controls: ['calendar'],
+      showRangeLabels: false,
       select: 'range',
       display: 'inline',
       touchUi: true,
@@ -119,52 +138,92 @@ onMounted(async () => {
               <!--              <v-btn icon="mdi-human-male-female" size="x-large" />-->
             </v-col>
           </v-row>
-          <v-row dense>
-            <v-col cols="4">
-              <span class="text-subtitle-1 font-weight-bold">성인</span>
-              <div class="text-caption">13세 이상</div>
-            </v-col>
-            <v-col cols="8" class="d-flex align-center justify-end">
-              <v-btn icon size="x-small" @click="iptAdults--" :disabled="iptAdults === 1">
-                <v-icon>mdi-minus</v-icon>
-              </v-btn>
-              <span class="mx-2 text-subtitle-1">{{ iptAdults }}</span>
-              <v-btn icon size="x-small" @click="iptAdults++">
-                <v-icon>mdi-plus</v-icon>
-              </v-btn>
+          <v-row class="box pa-4" dense>
+            <v-col>
+              <v-row dense>
+                <v-col cols="4">
+                  <span class="text-subtitle-1 font-weight-bold">성인</span>
+                  <div class="text-caption">13세 이상</div>
+                </v-col>
+                <v-col cols="8" class="d-flex align-center justify-end">
+                  <v-btn
+                    icon
+                    size="x-small"
+                    @click="iptAdults--"
+                    :disabled="iptAdults === 1"
+                    variant="outlined"
+                  >
+                    <v-icon>mdi-minus</v-icon>
+                  </v-btn>
+                  <span class="mx-2 text-subtitle-1">{{ iptAdults }}</span>
+                  <v-btn
+                    icon
+                    size="x-small"
+                    @click="iptAdults++"
+                    variant="outlined"
+                    :disabled="iptAdults >= 4"
+                  >
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row dense>
+                <v-col cols="4">
+                  <span class="text-subtitle-1 font-weight-bold">어린이</span>
+                  <div class="text-caption">2~12세</div>
+                </v-col>
+                <v-col cols="8" class="d-flex align-center justify-end">
+                  <v-btn
+                    icon
+                    size="x-small"
+                    @click="iptChildren--"
+                    :disabled="iptChildren === 0"
+                    variant="outlined"
+                  >
+                    <v-icon>mdi-minus</v-icon>
+                  </v-btn>
+                  <span class="mx-2 text-subtitle-1">{{ iptChildren }}</span>
+                  <v-btn
+                    icon
+                    size="x-small"
+                    @click="iptChildren++"
+                    variant="outlined"
+                    :disabled="iptChildren >= 4"
+                  >
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row dense>
+                <v-col cols="4">
+                  <span class="text-subtitle-1 font-weight-bold">유아</span>
+                  <div class="text-caption">2세 미만</div>
+                </v-col>
+                <v-col cols="8" class="d-flex align-center justify-end">
+                  <v-btn
+                    icon
+                    size="x-small"
+                    @click="iptInfants--"
+                    :disabled="iptInfants === 0"
+                    variant="outlined"
+                  >
+                    <v-icon>mdi-minus</v-icon>
+                  </v-btn>
+                  <span class="mx-2 text-subtitle-1">{{ iptInfants }}</span>
+                  <v-btn
+                    icon
+                    size="x-small"
+                    @click="iptInfants++"
+                    variant="outlined"
+                    :disabled="iptInfants >= 4"
+                  >
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>
+                </v-col>
+              </v-row>
             </v-col>
           </v-row>
-          <v-row dense>
-            <v-col cols="4">
-              <span class="text-subtitle-1 font-weight-bold">어린이</span>
-              <div class="text-caption">2~12세</div>
-            </v-col>
-            <v-col cols="8" class="d-flex align-center justify-end">
-              <v-btn icon size="x-small" @click="iptChildren--" :disabled="iptChildren === 0">
-                <v-icon>mdi-minus</v-icon>
-              </v-btn>
-              <span class="mx-2 text-subtitle-1">{{ iptChildren }}</span>
-              <v-btn icon size="x-small" @click="iptChildren++">
-                <v-icon>mdi-plus</v-icon>
-              </v-btn>
-            </v-col>
-          </v-row>
-          <v-row dense>
-            <v-col cols="4">
-              <span class="text-subtitle-1 font-weight-bold">유아</span>
-              <div class="text-caption">2세 미만</div>
-            </v-col>
-            <v-col cols="8" class="d-flex align-center justify-end">
-              <v-btn icon size="x-small" @click="iptInfants--" :disabled="iptInfants === 0">
-                <v-icon>mdi-minus</v-icon>
-              </v-btn>
-              <span class="mx-2 text-subtitle-1">{{ iptInfants }}</span>
-              <v-btn icon size="x-small" @click="iptInfants++">
-                <v-icon>mdi-plus</v-icon>
-              </v-btn>
-            </v-col>
-          </v-row>
-          <v-row dense class="mt-8">
+          <v-row dense class="box mt-6 pa-4">
             <v-col cols="12" md="4" sm="6">
               <v-text-field
                 variant="outlined"
@@ -178,6 +237,7 @@ onMounted(async () => {
                 type="tel"
                 @keyup.enter="createCall"
                 v-maska="maskaOptions"
+                hide-details
                 placeholder="Enter the total travel cost"
               />
             </v-col>
@@ -185,18 +245,21 @@ onMounted(async () => {
         </v-form>
       </v-card-text>
       <v-spacer />
-      <v-card-actions style="position: fixed; left: 0; bottom: 0; width: 100%; background: #fff">
-        <v-btn
-          size="large"
-          color="primary"
-          block
-          text="Create"
-          variant="tonal"
-          @click="createCall"
-        />
+      <v-card-actions
+        class="pa-4"
+        style="position: fixed; left: 0; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #e4e4e4;"
+      >
+        <v-btn variant="outlined" @click="clearCall">Clear</v-btn>
+        <v-spacer />
+        <v-btn class="w-33" color="primary" variant="tonal" @click="createCall"> Create </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.box {
+  border-radius: 15px;
+  background-color: #fff;
+}
+</style>

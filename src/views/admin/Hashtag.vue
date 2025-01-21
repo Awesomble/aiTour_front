@@ -75,7 +75,6 @@ onBeforeMount(() => {
               :rules="[rules.required, rules.duplication]"
               label="Tag Name"
               clearable
-              @keyup.enter="addHashtag"
             />
           </v-card-text>
           <v-card-actions class="justify-center">
