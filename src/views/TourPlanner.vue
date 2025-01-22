@@ -49,7 +49,7 @@ const sendMessage = async () => {
           Number(iptPlan.value.amount?.replace(/,/g, '')) * 1440
         }원 여행자수는 어른: ${iptPlan.value.adults} 어린이: ${iptPlan.value.children} 아기: ${
           iptPlan.value.infants
-        } 정보를 기준으로 서울을 여행할 수 있는 코스 생성해줘`
+        } 정보를 기준으로 서울 여행 코스를 json 형식으로 만들어 주세요.`
       )}`
     )
 
