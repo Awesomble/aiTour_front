@@ -20,7 +20,7 @@ const router = createRouter({
         {
           path: '/tourPlanner',
           name: 'tour-planner',
-          component: () => import('@/views/TourPlanner.vue'),
+          component: () => import('@/views/planner/TourPlanner.vue'),
           meta: {
             keepAlive: true
           }

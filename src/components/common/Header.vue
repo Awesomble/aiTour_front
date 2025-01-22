@@ -17,14 +17,11 @@ const user = ref<object>(
              :elevation="0"
              density="compact"
              style="border-bottom: 1px solid #eee;"
+             class="pl-4"
   >
     <!-- 왼쪽 콘텐츠 추가 -->
-    <div class="d-flex align-center">
-      <div>
-        <span class="text-h7 font-weight-bold">Hello Sarah!</span>
-        <v-icon color="yellow" size="small" class="ml-2">mdi-hand-wave</v-icon>
-        <div class="text-subtitle-2">Let's go on an adventure!</div>
-      </div>
+    <div class="d-flex align-center font-weight-black">
+      <h1 color="primary" class="text-button" style="font-size: 18px!important;">AITour</h1>
     </div>
     <v-spacer />
     <v-menu
@@ -37,9 +34,10 @@ const user = ref<object>(
           v-bind="props"
         >
           <v-avatar
+            size="small"
             color="primary"
           >
-            <span class="text-h5">{{ user.initials }}</span>
+            <span class="text-h6">{{ user.initials }}</span>
           </v-avatar>
         </v-btn>
       </template>

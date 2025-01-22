@@ -7,7 +7,7 @@ const route = useRoute()
 </script>
 
 <template>
-  <v-row dense class="custom-bottom-navigation ma-0 px-8">
+  <v-row dense class="custom-bottom-navigation ma-0 px-4">
     <!-- 좌측 아이콘 -->
     <v-col cols="4" class="d-flex justify-space-between">
       <v-btn
@@ -61,6 +61,7 @@ const route = useRoute()
   border-radius: 20px 20px 0 0; /* 상단 모서리 둥글게 */
   //box-shadow: 0px -4px 15px rgba(0, 0, 0, 0.1); /* 그림자 */
   overflow: visible; /* 플로팅 버튼이 바깥으로 나올 수 있게 */
+  z-index: 9;
 }
 
 /* 플로팅 버튼 컨테이너 */

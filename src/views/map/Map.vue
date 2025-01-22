@@ -263,7 +263,6 @@ gestureHandling: "cooperative", // 스크롤 동작 개선
       :styles="mapStyle"
       mapTypeId="roadmap"
       :disableDefaultUI="true"
-      gestureHandling="cooperative"
     >
       <CustomMarker :options="{ position: center, anchorPoint: 'CENTER_CENTER' }">
         <div class="element">
