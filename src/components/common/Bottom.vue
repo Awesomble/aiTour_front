@@ -21,7 +21,7 @@ const route = useRoute()
       <!-- 중앙 플로팅 버튼 -->
       <div class="floating-btn">
         <v-btn
-          :color="route.name === 'map' ? 'primary' : 'gray'"
+          color="primary"
           class="floating-btn-inner"
           icon="mdi-map"
           :to="{ name: 'map' }"
@@ -37,7 +37,7 @@ const route = useRoute()
         variant="text"
       />
       <v-btn
-        :color="route.name === 'my-home' ? 'primary' : 'gray'"
+        :color="route.name === 'my-bag' ? 'primary' : 'gray'"
         :to="{ name: 'my-bag' }"
         icon="mdi-bag-personal"
         variant="text"

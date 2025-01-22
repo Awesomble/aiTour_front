@@ -6,10 +6,11 @@ const router = createRouter({
     {
       path: '/',
       name: 'default-layout',
+      redirect: 'home',
       component: () => import('@/layouts/DefaultLayout.vue'),
       children: [
         {
-          path: '/',
+          path: '/home',
           name: 'home',
           component: () => import('@/views/home/Home.vue'),
           meta: {

@@ -230,8 +230,7 @@ onBeforeUnmount(() => {})
         >
       </v-btn-group>
     </v-row>
-
-    <v-row class="plan-list">
+    <v-row class="plan-list pb-16">
       <v-col cols="12">
         <v-skeleton-loader
           v-if="loading"
@@ -317,7 +316,7 @@ onBeforeUnmount(() => {})
       height: 0;
       z-index: -1;
       transform: translateX(-50%);
-      animation: growHeight 0.4s ease-in-out 0.3s forwards;
+      animation: growHeight 0.3s ease-in-out 0.3s forwards;
     }
   }
 }
