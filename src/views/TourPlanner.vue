@@ -182,7 +182,7 @@ onBeforeUnmount(() => {})
 </script>
 
 <template>
-  <v-container bg-color="#f8f8f8">
+  <v-container>
     <v-row>
       <v-col cols="12" class="d-flex justify-center ga-2">
         <v-chip v-if="iptPlan?.range" prepend-icon="mdi-calendar-range" variant="elevated">{{
@@ -219,17 +219,18 @@ onBeforeUnmount(() => {})
       </v-col>
     </v-row>
     <v-row class="justify-center">
-      <v-btn-group>
+      <v-btn-group divided>
         <v-btn
           v-for="(d, idx) in dateList"
           :key="idx + d"
           :color="selectedDate === idx + 1 ? 'primary' : 'white'"
           :disabled="selectedDate === idx + 1"
           @click="selectedDate = idx + 1"
-          >{{ dayjs(d).format('dd') }}<br />{{ dayjs(d).format('d') }}</v-btn
+          >{{ dayjs(d).format('dd') }}<br />{{ dayjs(d).format('DD') }}</v-btn
         >
       </v-btn-group>
     </v-row>
+
     <v-row class="plan-list">
       <v-col cols="12">
         <v-skeleton-loader
@@ -245,7 +246,7 @@ onBeforeUnmount(() => {})
           :key="index"
           align="start"
           class="mb-1 align-center plan"
-          :class="{'last': index === realData.filter((itm) => itm.day === `Day ${selectedDate}`) - 1}"
+          :class="{'last': index === realData.filter((itm) => itm.day === `Day ${selectedDate}`).length - 1}"
         >
           <!-- 좌측 아이콘 -->
           <v-col cols="2" class="text-center icon-container">
@@ -284,17 +285,6 @@ onBeforeUnmount(() => {})
 </template>
 
 <style lang="scss">
-.timelines {
-  display: flex;
-  ol {
-    list-style: none;
-    li[data-day='1']:first-child,
-    li[data-day='2']:first-child,
-    li[data-day='3']:first-child {
-      background-color: yellow; /* 각 data-day 그룹에서 첫 번째 요소 */
-    }
-  }
-}
 .btn-floating {
   position: fixed;
   right: 30px;
@@ -317,20 +307,29 @@ onBeforeUnmount(() => {})
     align-items: center;
     overflow: unset;
     z-index: 1;
-  }
-  &::after {
-    content: "";
-    position: absolute;
-    width: 1px;
-    background-color: #ccc;
-    left: 50%;
-    top: 60px;
-    height: 150px;
-    z-index: 0;
-    transform: translateX(-50%);
+    &::after {
+      content: "";
+      position: absolute;
+      width: 1px;
+      background-color: #ccc;
+      left: 50%;
+      top: 50px;
+      height: 0;
+      z-index: -1;
+      transform: translateX(-50%);
+      animation: growHeight 0.4s ease-in-out 0.3s forwards;
+    }
   }
 }
-.plan-list .plan:last-child .icon-container .timeline-avatar::after {
+@keyframes growHeight {
+  from {
+    height: 0; /* 초기 높이 */
+  }
+  to {
+    height: 130px; /* 최종 높이 */
+  }
+}
+.plan-list .plan.last .icon-container .timeline-avatar::after {
   display: none !important;
 }
 </style>

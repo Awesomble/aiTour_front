@@ -14,9 +14,18 @@ const user = ref<object>(
 
 <template>
   <v-app-bar color="white"
-             :elevation="1"
+             :elevation="0"
              density="compact"
+             style="border-bottom: 1px solid #eee;"
   >
+    <!-- 왼쪽 콘텐츠 추가 -->
+    <div class="d-flex align-center">
+      <div>
+        <span class="text-h7 font-weight-bold">Hello Sarah!</span>
+        <v-icon color="yellow" size="small" class="ml-2">mdi-hand-wave</v-icon>
+        <div class="text-subtitle-2">Let's go on an adventure!</div>
+      </div>
+    </div>
     <v-spacer />
     <v-menu
       min-width="200px"
@@ -89,5 +98,7 @@ const user = ref<object>(
 </template>
 
 <style scoped lang='scss'>
-
+.text-gray-500 {
+  color: #9e9e9e; /* 회색 텍스트 색상 */
+}
 </style>

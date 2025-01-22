@@ -23,5 +23,6 @@ import Navigation from '@/components/common/Navigation.vue'
 <style scoped lang='scss'>
 main {
   padding-top: 48px;
+  background-color: #f8f8f8;
 }
 </style>

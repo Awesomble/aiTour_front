@@ -9,9 +9,9 @@ export const vuetify = createVuetify({
     components,
     directives,
     theme: {
-        defaultTheme: 'light',
+        defaultTheme: 'aitour',
         themes: {
-            light: {
+            aitour: {
                 colors: {
                     primary: '#1483C2',
                     secondary: '#fdcb6e',
@@ -24,7 +24,6 @@ export const vuetify = createVuetify({
                     gray: '#A0AEB5',
                     white: '#ffffff',
                     black: '#000000',
-
                 },
                 dark: false,
                 variables: {},

@@ -251,7 +251,7 @@ onMounted(async () => {
       >
         <v-btn variant="outlined" @click="clearCall">Clear</v-btn>
         <v-spacer />
-        <v-btn class="w-33" color="primary" variant="tonal" @click="createCall"> Create </v-btn>
+        <v-btn class="w-33 btn-create" color="primary" @click="createCall"> Create </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -261,5 +261,11 @@ onMounted(async () => {
 .box {
   border-radius: 15px;
   background-color: #fff;
+}
+
+.btn-create {
+  background-color: #1976d2 !important; /* Primary 색상 */
+  color: white !important;
+  border: none !important;
 }
 </style>

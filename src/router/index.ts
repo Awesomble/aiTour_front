@@ -11,7 +11,7 @@ const router = createRouter({
         {
           path: '/',
           name: 'home',
-          component: () => import('@/views/Home.vue'),
+          component: () => import('@/views/home/Home.vue'),
           meta: {
             keepAlive: true
           }
@@ -25,9 +25,17 @@ const router = createRouter({
           }
         },
         {
-          path: '/myHome',
-          name: 'my-home',
-          component: () => import('@/views/my/MyHome.vue'),
+          path: '/myBag',
+          name: 'my-bag',
+          component: () => import('@/views/mybag/MyBag.vue'),
+          meta: {
+            keepAlive: true
+          }
+        },
+        {
+          path: '/map',
+          name: 'map',
+          component: () => import('@/views/map/Map.vue'),
           meta: {
             keepAlive: true
           }
