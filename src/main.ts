@@ -1,5 +1,7 @@
+import 'reset-css'
 import './assets/scss/main.scss'
 import './assets/css/mobiscroll.javascript.min.css'
+import 'swiper/css'
 
 import { createApp } from 'vue'
 import { vuetify } from './plugins/vuetify'

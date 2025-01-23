@@ -179,7 +179,10 @@ onBeforeMount(() => {
 })
 onMounted(() => {
   if (window?.AndroidBridge) {
-    window.AndroidBridge.handleUrlAction('share:https://example.com')
+    // URL 액션 호출
+    window.AndroidBridge.handleUrlAction("share:https://example.com");
+  } else {
+    console.error("AndroidBridge is not available");
   }
 })
 onBeforeUnmount(() => {})
@@ -187,124 +190,127 @@ onBeforeUnmount(() => {})
 
 <template>
   <v-slide-x-reverse-transition group>
-    <v-container v-if="!realData.length" class="d-flex justify-center align-center fill-height">
-      <v-card class="text-center pa-4 mb-16 elevation-1" max-width="350" color="white">
-        <div class="image-stack">
-          <v-img src="https://picsum.photos/500/300?image=234" class="stacked-image bottom"></v-img>
-        </div>
-        <v-card-text class="mt-6">
-          <h3 class="font-weight-bold">When if not <span class="text-primary">today?</span></h3>
-          <p>It's time to start a new adventure</p>
-          <v-divider class="pt-6" />
-          <v-btn block color="primary" class="ma-auto" @click="myPlanDialog = true">
-            Create your first trip
-          </v-btn>
-        </v-card-text>
-      </v-card>
-    </v-container>
-    <v-container v-else>
-      <v-row>
-        <v-col cols="12" class="d-flex justify-center ga-2">
-          <v-chip-group column>
-            <v-chip v-if="iptPlan?.range" prepend-icon="mdi-calendar-range" variant="elevated">{{
-              iptPlan.range
-            }}</v-chip>
-            <v-chip
-              v-if="iptPlan?.amount"
-              color="primary"
-              prepend-icon="mdi-currency-krw"
-              variant="elevated"
-              >{{
-                String(Number(iptPlan.amount.replace(/,/g, '')) * 1440).toLocaleString()
-              }}</v-chip
-            >
-            <v-chip
-              v-if="iptPlan?.adults"
-              color="secondary"
-              prepend-icon="mdi-human-male-female"
-              variant="elevated"
-              >{{ iptPlan.adults }}</v-chip
-            >
-            <v-chip
-              v-if="iptPlan?.children"
-              color="success"
-              prepend-icon="mdi-human-male-female-child"
-              variant="elevated"
-              >{{ iptPlan.children }}</v-chip
-            >
-            <v-chip
-              v-if="iptPlan?.infants"
-              color="surface"
-              prepend-icon="mdi-baby"
-              variant="elevated"
-              >{{ iptPlan.infants }}</v-chip
-            >
-          </v-chip-group>
-        </v-col>
+<!--    <v-container  class="d-flex justify-center align-center fill-height">-->
+    <v-container>
+      <v-row v-if="!iptPlan" class="d-flex justify-center align-center fill-height">
+        <v-card class="text-center pa-4 mt-14 elevation-1" max-width="350" color="white">
+          <div class="image-stack">
+            <v-img src="https://picsum.photos/500/300?image=234" class="stacked-image bottom" />
+          </div>
+          <v-card-text class="mt-6">
+            <h3 class="font-weight-bold">When if not <span class="text-primary">today?</span></h3>
+            <p>It's time to start a new adventure</p>
+            <v-divider class="pt-6" />
+            <v-btn block color="primary" class="ma-auto" @click="myPlanDialog = true">
+              Create your first trip
+            </v-btn>
+          </v-card-text>
+        </v-card>
       </v-row>
-      <v-row class="justify-center">
-        <v-btn-group divided>
-          <v-btn
-            v-for="(d, idx) in dateList"
-            :key="idx + d"
-            :color="selectedDate === idx + 1 ? 'primary' : 'white'"
-            :disabled="selectedDate === idx + 1"
-            @click="selectedDate = idx + 1"
-            >{{ dayjs(d).format('dd') }}<br />{{ dayjs(d).format('DD') }}</v-btn
-          >
-        </v-btn-group>
-      </v-row>
-      <v-row class="plan-list pb-16">
-        <v-col cols="12">
-          <v-skeleton-loader
-            v-if="loading"
-            class="mx-auto"
-            elevation="1"
-            color="white"
-            type="article"
-          ></v-skeleton-loader>
-          <v-slide-x-reverse-transition group>
-            <v-row
-              v-for="(item, index) in realData.filter((itm) => itm.day === `Day ${selectedDate}`)"
-              :key="index"
-              align="start"
-              class="mb-1 align-center plan"
-              :class="{
-                last:
-                  index === realData.filter((itm) => itm.day === `Day ${selectedDate}`).length - 1
-              }"
+      <template v-else>
+        <v-row>
+          <v-col cols="12" class="d-flex justify-center ga-2">
+            <v-chip-group column>
+              <v-chip v-if="iptPlan?.range" prepend-icon="mdi-calendar-range" variant="elevated">{{
+                iptPlan.range
+              }}</v-chip>
+              <v-chip
+                v-if="iptPlan?.amount"
+                color="primary"
+                prepend-icon="mdi-currency-krw"
+                variant="elevated"
+                >{{
+                  String(Number(iptPlan.amount.replace(/,/g, '')) * 1440).toLocaleString()
+                }}</v-chip
+              >
+              <v-chip
+                v-if="iptPlan?.adults"
+                color="secondary"
+                prepend-icon="mdi-human-male-female"
+                variant="elevated"
+                >{{ iptPlan?.adults }}</v-chip
+              >
+              <v-chip
+                v-if="iptPlan?.children"
+                color="success"
+                prepend-icon="mdi-human-male-female-child"
+                variant="elevated"
+                >{{ iptPlan?.children }}</v-chip
+              >
+              <v-chip
+                v-if="iptPlan?.infants"
+                color="surface"
+                prepend-icon="mdi-baby"
+                variant="elevated"
+                >{{ iptPlan?.infants }}</v-chip
+              >
+            </v-chip-group>
+          </v-col>
+        </v-row>
+        <v-row class="justify-center">
+          <v-btn-group divided>
+            <v-btn
+              v-for="(d, idx) in dateList"
+              :key="idx + d"
+              :color="selectedDate === idx + 1 ? 'primary' : 'white'"
+              :disabled="selectedDate === idx + 1"
+              @click="selectedDate = idx + 1"
+              >{{ dayjs(d).format('dd') }}<br />{{ dayjs(d).format('DD') }}</v-btn
             >
-              <!-- 좌측 아이콘 -->
-              <v-col cols="2" class="text-center icon-container">
-                <v-avatar class="icon-circle timeline-avatar" color="red lighten-2">
-                  <span class="icon-text">{{ item.category.substr(0, 1).toUpperCase() }}</span>
-                </v-avatar>
-              </v-col>
+          </v-btn-group>
+        </v-row>
+        <v-row class="plan-list pb-16">
+          <v-col cols="12">
+            <v-skeleton-loader
+              v-if="loading"
+              class="mx-auto"
+              elevation="1"
+              color="white"
+              type="article"
+            ></v-skeleton-loader>
+            <v-slide-x-reverse-transition group>
+              <v-row
+                v-for="(item, index) in realData.filter((itm) => itm.day === `Day ${selectedDate}`)"
+                :key="index"
+                align="start"
+                class="mb-1 align-center plan"
+                :class="{
+                  last:
+                    index === realData.filter((itm) => itm.day === `Day ${selectedDate}`).length - 1
+                }"
+              >
+                <!-- 좌측 아이콘 -->
+                <v-col cols="2" class="text-center icon-container">
+                  <v-avatar class="icon-circle timeline-avatar" color="red lighten-2">
+                    <span class="icon-text">{{ item.category.substr(0, 1).toUpperCase() }}</span>
+                  </v-avatar>
+                </v-col>
 
-              <!-- 우측 컨텐츠 -->
-              <v-col cols="10">
-                <v-card class="content-card" color="white">
-                  <v-card-title class="d-flex justify-space-between">
-                    <span class="title-text">{{ item.name }}</span>
-                    <span class="category-text">{{ item.category }}</span>
-                  </v-card-title>
-                  <v-card-subtitle class="subtitle-text">
-                    {{ item.description }}
-                  </v-card-subtitle>
-                  <v-card-actions>
-                    <v-btn text color="orange">VIEW DETAILS</v-btn>
-                  </v-card-actions>
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-slide-x-reverse-transition>
-        </v-col>
-      </v-row>
-      <v-row v-if="false">
-        <v-col>
-          <div ref="planContainer" v-html="responsesContent" />
-        </v-col>
-      </v-row>
+                <!-- 우측 컨텐츠 -->
+                <v-col cols="10">
+                  <v-card class="content-card" color="white">
+                    <v-card-title class="d-flex justify-space-between">
+                      <span class="title-text">{{ item.name }}</span>
+                      <span class="category-text">{{ item.category }}</span>
+                    </v-card-title>
+                    <v-card-subtitle class="subtitle-text">
+                      {{ item.description }}
+                    </v-card-subtitle>
+                    <v-card-actions>
+                      <v-btn text color="orange">VIEW DETAILS</v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-col>
+              </v-row>
+            </v-slide-x-reverse-transition>
+          </v-col>
+        </v-row>
+        <v-row v-if="false">
+          <v-col>
+            <div ref="planContainer" v-html="responsesContent" />
+          </v-col>
+        </v-row>
+      </template>
     </v-container>
   </v-slide-x-reverse-transition>
   <v-btn class="btn-floating" icon="mdi-airplane" color="primary" @click="myPlanDialog = true" />
