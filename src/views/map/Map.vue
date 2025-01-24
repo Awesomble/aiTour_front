@@ -229,6 +229,7 @@ const setGPS = () => {
 const myLocationCall = () => {
   if (golbalStore.lat && golbalStore.long) {
     center.value = { lat: golbalStore.lat, lng: golbalStore.long }
+    zoom.value = 15
   }
 }
 const activater = async () => {
@@ -243,8 +244,8 @@ const activater = async () => {
           content: makePlace(photozone[i].photos[0]),
           position: {
             lat: photozone[i].gps.lat,
-            lng: photozone[i].gps.lng,
-          },
+            lng: photozone[i].gps.lng
+          }
         })
         AdvancedMarkerElement.addListener('click', () => {
           console.log(AdvancedMarkerElement, i)
@@ -273,6 +274,16 @@ onMounted(() => {
 <template>
   <v-container class="pa-0 h-100">
     <div id="instMap" class="h-100" />
+    <div class="mounter">
+      <ul>
+        <li><a href="javascript:"><v-icon icon="mdi-camera-account" /></a></li>
+        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
+      </ul>
+    </div>
     <v-btn
       class="btn-floating"
       icon="mdi-image-filter-center-focus"
@@ -283,6 +294,36 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
+.mounter {
+  position: fixed;
+  right: 20px;
+  bottom: 140px;
+  z-index: 99;
+  width: 50px;
+  border: 4px solid #1483c2;
+  border-radius: 50px;
+  background-color: #fff;
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.2);
+  ul {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 15px 0;
+    gap: 15px;
+    li {
+      a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30%;
+        border-radius: 50%;
+        background-color: #fff;
+      }
+    }
+  }
+}
 .pin {
   border-radius: 50% 50% 50% 0;
   border: 4px solid #1483c2;
