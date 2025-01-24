@@ -1,0 +1,88 @@
+{
+  "photozone": [
+    {
+      "name": "자작나무이야기",
+      "category": "까페",
+      "address": "서울 종로구 율곡로1길 74-15",
+      "phone": "02-123-4567",
+      "opening_hours": {
+        "monday": "12:00 - 22:00",
+        "tuesday": "12:00 - 22:00",
+        "wednesday": "12:00 - 22:00",
+        "thursday": "12:00 - 22:00",
+        "friday": "12:00 - 23:00",
+        "saturday": "12:00 - 23:00",
+        "sunday": "12:00 - 22:00"
+      },
+      "gps": {
+        "lat": 37.5786742616539,
+        "lng": 126.99167977913
+      },
+      "menu": [
+        {
+          "name": "쌍화차",
+          "price": "6,000원"
+        },
+        {
+          "name": "생과일쥬스",
+          "price": "6,000원"
+        },
+        {
+          "name": "냉커피",
+          "price": "4,000원"
+        }
+      ],
+      "photos": [
+        "https://aitour-thumb.s3.ap-northeast-2.amazonaws.com/ulzzi.png"
+      ]
+    },
+    {
+      "name": "광통교",
+      "address": "서울 종로구 서린동",
+      "gps": {
+        "lat": 37.5695112747648,
+        "lng": 126.980399217074
+      },
+      "photos": [
+        "https://aitour-thumb.s3.ap-northeast-2.amazonaws.com/gangtong01.png"
+      ]
+    },
+    {
+      "name": "을지다방",
+      "category": "까페",
+      "address": "서울 중구 을지로 124-1 2층",
+      "phone": "02-123-4567",
+      "opening_hours": {
+        "monday": "12:00 - 22:00",
+        "tuesday": "12:00 - 22:00",
+        "wednesday": "12:00 - 22:00",
+        "thursday": "12:00 - 22:00",
+        "friday": "12:00 - 23:00",
+        "saturday": "12:00 - 23:00",
+        "sunday": "12:00 - 22:00"
+      },
+      "gps": {
+        "lat": 37.5661204498117,
+        "lng": 126.99167977913
+      },
+      "menu": [
+        {
+          "item": "아메리카노",
+          "price": "4,000원"
+        },
+        {
+          "item": "라떼",
+          "price": "4,500원"
+        },
+        {
+          "item": "팥빙수",
+          "price": "8,000원"
+        }
+      ],
+      "photos": [
+        "https://aitour-thumb.s3.ap-northeast-2.amazonaws.com/jajack01.png",
+        "https://aitour-thumb.s3.ap-northeast-2.amazonaws.com/jajack02.png"
+      ]
+    }
+  ]
+}

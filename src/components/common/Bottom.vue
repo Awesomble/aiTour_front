@@ -9,7 +9,7 @@ const route = useRoute()
 <template>
   <v-row dense class="custom-bottom-navigation ma-0 px-4">
     <!-- 좌측 아이콘 -->
-    <v-col cols="4" class="d-flex justify-space-between">
+    <v-col cols="5" class="d-flex justify-space-around">
       <v-btn
         :color="route.name === 'home' ? 'primary' : 'gray'"
         :to="{ name: 'home' }"
@@ -29,7 +29,7 @@ const route = useRoute()
       </div>
     </v-col>
     <!-- 우측 아이콘 -->
-    <v-col cols="4" class="d-flex justify-space-between">
+    <v-col cols="5" class="d-flex justify-space-around">
       <v-btn
         :color="route.name === 'tour-planner' ? 'primary' : 'gray'"
         :to="{ name: 'tour-planner' }"

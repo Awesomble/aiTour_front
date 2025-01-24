@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref } from 'vue'
+import { onBeforeMount, ref } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const tabsIdx = ref<number>(0)
 onBeforeMount(() => {})
 </script>
@@ -16,9 +18,13 @@ onBeforeMount(() => {})
         <li><a href="javascript:;" @click="tabsIdx = 1">Follow</a></li>
       </ul>
     </div>
-    <swiper :slides-per-view="1" :space-between="10">
-      <swiper-slide class="banner">
-        <v-img src="https://picsum.photos/500/300?image=238" class="stacked-image rounded-lg" />
+    <swiper :slides-per-view="1"
+            :space-between="10"
+            class="mt-4"
+            height="200"
+    >
+      <swiper-slide class="banner" @click="router.push({ name: 'map', query: { type: 'camera' } })">
+        <img src="https://picsum.photos/500/300?image=238" height="200" class="stacked-image rounded-lg" />
         <div class="info">
           <p class="icon d-flex ga-2">
             <v-icon color="pink" size="x-small" icon="mdi-camera-account" />
@@ -29,8 +35,8 @@ onBeforeMount(() => {})
           <p class="disc">Almardo Adyenture Labs Happy hours Commute</p>
         </div>
       </swiper-slide>
-      <swiper-slide class="banner">
-        <v-img src="https://picsum.photos/500/300?image=301" class="stacked-image rounded-lg" />
+      <swiper-slide class="banner" @click="router.push({ name: 'map', query: { type: 'camera' } })">
+        <img src="https://picsum.photos/500/300?image=301" height="200" class="stacked-image rounded-lg" />
         <div class="info">
           <p class="icon d-flex ga-2">
             <v-icon color="pink" size="x-small" icon="mdi-camera-account" />
@@ -41,8 +47,8 @@ onBeforeMount(() => {})
           <p class="disc">Almardo Adyenture Labs Happy hours Commute</p>
         </div>
       </swiper-slide>
-      <swiper-slide class="banner">
-        <v-img src="https://picsum.photos/500/300?image=239" class="stacked-image rounded-lg" />
+      <swiper-slide class="banner" @click="router.push({ name: 'map', query: { type: 'camera' } })">
+        <img src="https://picsum.photos/500/300?image=239" height="200" class="stacked-image rounded-lg" />
         <div class="info">
           <p class="icon d-flex ga-2">
             <v-icon color="pink" size="x-small" icon="mdi-camera-account" />
@@ -60,7 +66,7 @@ onBeforeMount(() => {})
 <style lang="scss">
 .tabs {
   position: relative;
-  padding-bottom: 15px;
+  padding-bottom: 12px;
   ul {
     display: flex;
     flex-wrap: wrap;
@@ -94,7 +100,10 @@ onBeforeMount(() => {})
 }
 .banner {
   position: relative;
-  margin-top: 30px;
+  img {
+    width: 100%;
+    object-fit: cover;
+  }
   .info {
     position: absolute;
     left: 0;

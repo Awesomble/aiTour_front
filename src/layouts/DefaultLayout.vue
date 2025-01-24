@@ -13,9 +13,6 @@ import Navigation from '@/components/common/Navigation.vue'
         <component :is="Component" />
       </keep-alive>
     </router-view>
-<!--    <router-view v-slot="{ Component, route }">-->
-<!--      <component v-if="!route.meta.keepAlive" :is="Component" />-->
-<!--    </router-view>-->
   </v-main>
   <Bottom />
 </template>
@@ -24,5 +21,18 @@ import Navigation from '@/components/common/Navigation.vue'
 main {
   padding-top: 48px;
   background-color: #f8f8f8;
+}
+.slide-fade-enter-active, .slide-fade-leave-active {
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.slide-fade-enter, .slide-fade-leave-to /* .slide-fade-leave-active in <2.1.8 */ {
+  opacity: 0;
+  transform: translateX(100%); /* 오른쪽으로 이동 */
+}
+
+.slide-fade-enter-to, .slide-fade-leave {
+  opacity: 1;
+  transform: translateX(0); /* 원래 위치로 */
 }
 </style>
