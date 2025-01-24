@@ -310,7 +310,7 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    padding: 10px 0;
+    padding: 10px 0 8px;
     gap: 15px;
     li {
       a {
@@ -340,22 +340,34 @@ onMounted(() => {
     top: 2px;
   }
   &.active1::after {
-    top: 30px;
+    top: 39px;
   }
   &.active2::after {
-    top: 130px;
+    top: 78px;
   }
   &.active3::after {
-    top: 230px;
+    top: 117px;
   }
   &.active4::after {
-    top: 330px;
+    top: 156px;
   }
   &.active5::after {
-    top: 30px;
+    top: 195px;
   }
   &.active6::after {
-    top: 30px;
+    top: 234px;
+  }
+  &.active6::after {
+    top: 273px;
+  }
+  &.active7::after {
+    top: 312px;
+  }
+  &.active8::after {
+    top: 351px;
+  }
+  &.active9::after {
+    top: 390px;
   }
 }
 .pin {
