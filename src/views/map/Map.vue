@@ -186,6 +186,7 @@ const mapStyle = [
     ]
   }
 ]
+const mountIdx = ref<number>(0)
 let map: any
 
 const mapInit = async () => {
@@ -274,14 +275,14 @@ onMounted(() => {
 <template>
   <v-container class="pa-0 h-100">
     <div id="instMap" class="h-100" />
-    <div class="mounter">
+    <div class="mounter" :class="`active${mountIdx}`">
       <ul>
-        <li><a href="javascript:"><v-icon icon="mdi-camera-account" /></a></li>
-        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:" @click="mountIdx = 0"><v-icon icon="mdi-camera-account" /></a></li>
+        <li><a href="javascript:" @click="mountIdx = 1"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:" @click="mountIdx = 2"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:" @click="mountIdx = 3"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:" @click="mountIdx = 4"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:" @click="mountIdx = 5"><v-icon icon="mdi-toilet" /></a></li>
       </ul>
     </div>
     <v-btn
@@ -309,7 +310,7 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    padding: 15px 0;
+    padding: 10px 0;
     gap: 15px;
     li {
       a {
@@ -322,6 +323,39 @@ onMounted(() => {
         background-color: #fff;
       }
     }
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: 2px;
+    display: flex;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #1483c2;
+    border-radius: 50%;
+    transition: .3s top ease-in-out;
+  }
+  &.active0::after {
+    top: 2px;
+  }
+  &.active1::after {
+    top: 30px;
+  }
+  &.active2::after {
+    top: 130px;
+  }
+  &.active3::after {
+    top: 230px;
+  }
+  &.active4::after {
+    top: 330px;
+  }
+  &.active5::after {
+    top: 30px;
+  }
+  &.active6::after {
+    top: 30px;
   }
 }
 .pin {
