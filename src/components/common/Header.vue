@@ -99,4 +99,9 @@ const user = ref<object>(
 .text-gray-500 {
   color: #9e9e9e; /* 회색 텍스트 색상 */
 }
+.blur {
+  backdrop-filter: blur(25px) !important;
+  background: #f5f6f79f !important;
+  border-bottom: none;
+}
 </style>

@@ -282,7 +282,7 @@ onMounted(() => {
         <li><a href="javascript:" @click="mountIdx = 2"><v-icon icon="mdi-toilet" /></a></li>
         <li><a href="javascript:" @click="mountIdx = 3"><v-icon icon="mdi-toilet" /></a></li>
         <li><a href="javascript:" @click="mountIdx = 4"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:" @click="mountIdx = 5"><v-icon icon="mdi-toilet" /></a></li>
+        <li><a href="javascript:" @click="mountIdx = 5" style="font-size: 20px;">🇰🇷</a></li>
       </ul>
     </div>
     <v-btn
@@ -311,16 +311,18 @@ onMounted(() => {
     justify-content: center;
     flex-direction: column;
     padding: 10px 0 8px;
-    gap: 15px;
+    gap: 10px;
     li {
       a {
         display: flex;
         align-items: center;
         justify-content: center;
         width: 30px;
-        height: 30%;
+        height: 30px;
         border-radius: 50%;
         background-color: #fff;
+        color: #000;
+        font-size: 14px;
       }
     }
   }
@@ -340,19 +342,19 @@ onMounted(() => {
     top: 2px;
   }
   &.active1::after {
-    top: 39px;
+    top: 44px;
   }
   &.active2::after {
-    top: 78px;
+    top: 84px;
   }
   &.active3::after {
-    top: 117px;
+    top: 124px;
   }
   &.active4::after {
-    top: 156px;
+    top: 164px;
   }
   &.active5::after {
-    top: 195px;
+    top: 206px;
   }
   &.active6::after {
     top: 234px;

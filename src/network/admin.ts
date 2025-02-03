@@ -1,4 +1,5 @@
 import { adminInstance } from '@/network/instance'
+import { RouteParamValue } from 'vue-router'
 
 // Axios 인스턴스를 미리 생성
 const instance = adminInstance()
@@ -6,7 +7,7 @@ const instance = adminInstance()
 export const getPlacesAPI = async () => {
   return instance.get(`/places`)
 }
-export const getPlacesDetailAPI = async (place_id: string) => {
+export const getPlacesDetailAPI = async (place_id: string | RouteParamValue[]) => {
   return instance.get(`/places/${place_id}`)
 }
 export const addPlaceAPI = async (payload: object) => {
@@ -18,6 +19,13 @@ export const delPlaceAPI = async (place_id: string) => {
 export const updatePlaceAPI = async (place_id: string, payload: object) => {
   return instance.put(`/places/${place_id}`, payload)
 }
+export const addPlaceHashtagAPI = async (place_id: string, payload: object) => {
+  return instance.post(`/places/${place_id}/hashtags`, payload)
+}
+export const delPlaceHashtagAPI = async (place_id: string, hashtag_id: string) => {
+  return instance.delete(`/places/${place_id}/hashtags/${hashtag_id}`)
+}
+
 
 export const getHashtagsAPI = async () => {
   return instance.get(`/hashtags`)

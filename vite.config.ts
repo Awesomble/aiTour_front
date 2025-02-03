@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import path from 'path'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { VitePWA } from 'vite-plugin-pwa'
-import path from 'path'
 
 import { join, resolve } from 'node:path'
 export default defineConfig({

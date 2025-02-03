@@ -186,6 +186,7 @@ onBeforeMount(() => {
             :search="iptSearch"
             dense
             outlined
+            height="500"
           >
             <template v-slot:item.place_id="{ item }">
               <a
