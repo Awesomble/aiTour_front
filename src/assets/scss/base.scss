@@ -1,11 +1,22 @@
-body {
-  font-family:
-          'Noto Sans KR',
-          'Noto Sans JP',
-          'Noto Sans SC',
-          'Noto Sans TC',
-          'Noto Sans',
-          sans-serif;
+
+html, body, .v-application {
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+        overflow-x: auto; /* 넘침 발생 시 가로 스크롤 없애기(필요 시) */
+        font-family:
+                'Noto Sans KR',
+                'Noto Sans JP',
+                'Noto Sans SC',
+                'Noto Sans TC',
+                'Noto Sans',
+                sans-serif;
+}
+
+/* 모든 이미지, 동영상 등은 화면 폭 이상으로 커지지 않도록 */
+img, video {
+        max-width: 100%;
+        height: auto; /* 세로 비율 유지 */
 }
 a {
         text-decoration: none;
@@ -13,3 +24,4 @@ a {
 tr th, td {
         vertical-align: middle !important;
 }
+

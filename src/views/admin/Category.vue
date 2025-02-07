@@ -1,20 +1,26 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { addHashtagsAPI, delHashtagsAPI, getHashtagsAPI } from '@/network/admin'
+import {
+  addCategoriesAPI,
+  delCategoriesAPI,
+  getCategoriesAPI,
+} from '@/network/admin'
 import { onBeforeMount } from 'vue'
 
 const formRef = ref<HTMLFormElement | null>(null)
-const hashtags = ref<any[]>([]) // Adjust type if necessary
-const iptHashtag = ref<string>('')
+const categories = ref<any[]>([]) // Adjust type if necessary
+const iptCategory = ref<string>('')
+const iptDescription = ref<string>('Essential Facilities-')
 const iptSearch = ref<string>('')
 const isShowDialog = ref<boolean>(false)
 const headers = ref<object[]>([
   {
-    key: 'hashtag_id',
+    key: 'category_id',
     sortable: false,
     title: 'ID'
   },
   { key: 'name', align: 'start', title: 'Name' },
+  { key: 'description', align: 'start', title: 'Description' },
   { key: 'action', align: 'end', title: 'Action' }
 ])
 
@@ -22,45 +28,45 @@ const rules = ref({
   required: (value: string) => !!value || 'Required.',
   duplication: (value: string) => {
     if (!value) return 'Required.'
-    if (!hashtags.value?.length) {
-      return true // No hashtags to compare with
+    if (!categories.value?.length) {
+      return true
     }
-    return hashtags.value.some((hashtag: any) => hashtag.name === value)
+    return categories.value.some((category: any) => category.name === value)
       ? 'Duplication: This value already exists.'
       : true
   }
 })
 
-const addHashtag = async () => {
+const addCategory = async () => {
   const { valid } = await formRef.value.validate()
-  console.log(valid)
-  if (!valid) return; // Prevent submission if form is invalid
-  const res = await addHashtagsAPI({ name: iptHashtag.value })
+  if (!valid) return
+  const res = await addCategoriesAPI({ name: iptCategory.value, description: iptDescription.value })
   if (res?.data) {
-    iptHashtag.value = ''
-    getHashtags()
+    iptCategory.value = ''
+    iptDescription.value = 'Essential Facilities-'
     isShowDialog.value = false
+    getCategories()
   }
 }
 
-const getHashtags = async () => {
-  const res = (await getHashtagsAPI()) as any // Replace with the correct type if known
+const getCategories = async () => {
+  const res = (await getCategoriesAPI()) as any
   if (res?.data) {
-    hashtags.value = res.data
+    categories.value = res.data
   } else {
-    hashtags.value = [] // Fallback to an empty array
+    categories.value = []
   }
 }
 
-const delHashtag = async (id: any) => {
-  const res = await delHashtagsAPI(id)
+const delCategories = async (id: any) => {
+  const res = await delCategoriesAPI(id)
   if (res.status === 200) {
-    getHashtags()
+    getCategories()
   }
 }
 
 onBeforeMount(() => {
-  getHashtags()
+  getCategories()
 })
 </script>
 
@@ -68,13 +74,13 @@ onBeforeMount(() => {
   <v-container fluid class="pa-0">
     <v-row no-gutters>
       <v-col>
-        <v-card title="Hashtag List">
+        <v-card title="Catetory List">
           <template #append>
             <v-btn density="compact" icon @click="isShowDialog = true">
               <v-icon>mdi-plus</v-icon>
             </v-btn>
           </template>
-          <v-card-text v-if="hashtags?.length">
+          <v-card-text v-if="categories?.length">
             <template v-slot:text>
               <v-text-field
                 v-model="iptSearch"
@@ -91,7 +97,7 @@ onBeforeMount(() => {
               dense
               outlined
               :headers="headers"
-              :items="hashtags"
+              :items="categories"
               :search="iptSearch"
             >
               <template v-slot:item.action="{ item }">
@@ -102,25 +108,29 @@ onBeforeMount(() => {
         </v-card>
       </v-col>
     </v-row>
-
-    <v-dialog
-      v-model="isShowDialog"
-      width="auto"
-    >
-      <v-card
-        prepend-icon="mdi-account"
-        title="Add Category"
-      >
+    <v-dialog v-model="isShowDialog" width="auto">
+      <v-card prepend-icon="mdi-account" title="Add Category" width="350">
         <v-form ref="formRef">
           <v-card-text>
             <v-row dense>
-              <v-col
-                cols="12"
-              >
+              <v-col cols="12">
                 <v-text-field
-                  v-model="iptHashtag"
+                  v-model="iptCategory"
                   density="compact"
                   variant="outlined"
+                  label="Name"
+                  :rules="[rules.required, rules.duplication]"
+                  required
+                  clearable
+                  focused
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="iptDescription"
+                  density="compact"
+                  variant="outlined"
+                  label="Description"
                   :rules="[rules.required, rules.duplication]"
                   required
                   clearable
@@ -132,12 +142,7 @@ onBeforeMount(() => {
           <v-divider></v-divider>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn
-              color="primary"
-              text="Save"
-              variant="tonal"
-              @click="addHashtag"
-            ></v-btn>
+            <v-btn color="primary" text="Save" variant="tonal" @click="addCategory"></v-btn>
           </v-card-actions>
         </v-form>
       </v-card>

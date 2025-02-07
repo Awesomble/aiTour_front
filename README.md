@@ -45,7 +45,8 @@ npm run build
 npm run lint
 ```
 
-
+// const adminBaseURL = 'http://3.36.140.131:8080'
+// const adminBaseURL = 'https://aitour-api.awesomble.com'
 const apiBaseURL = "http://3.36.140.131:8000"; // FastAPI 서버 주소
 
 너는 여행전문가로 여행 코스와 스케쥴을 설계하는 AI입니다.

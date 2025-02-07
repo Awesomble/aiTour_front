@@ -25,7 +25,35 @@ export const addPlaceHashtagAPI = async (place_id: string, payload: object) => {
 export const delPlaceHashtagAPI = async (place_id: string, hashtag_id: string) => {
   return instance.delete(`/places/${place_id}/hashtags/${hashtag_id}`)
 }
+// specialday
+export const getSpecialDaysAPI = async (place_id: string, year: string, month: string) => {
+  return instance.get(`/places/${place_id}/special-days`, {
+    params: { year, month }
+  })
+}
+export const addSpecialDaysAPI = async (place_id: string, payload: object) => {
+  return instance.post(`/places/${place_id}/special-days`, payload)
+}
+export const delSpecialDaysAPI = async (place_id: string, special_day_id: number) => {
+  return instance.delete(`/places/${place_id}/special-days/${special_day_id}`)
+}
+// file
+export const uploadPlaceFileAPI = async (place_id: string, payload: any) => {
+  return instance.post(`/photos/upload/${place_id}`, payload, { headers: { 'Content-Type': 'multipart/form-data' }})
+}
+export const delPlaceFileAPI = async (place_id: string, photo_id: string) => {
+  return instance.delete(`/photos/places/${place_id}/photos/${photo_id}`)
+}
 
+export const getCategoriesAPI = async () => {
+  return instance.get(`/categories`)
+}
+export const addCategoriesAPI = async (payload: object) => {
+  return instance.post(`/categories`, payload)
+}
+export const delCategoriesAPI = async (category_id: number) => {
+  return instance.delete(`/categories/${category_id}`)
+}
 
 export const getHashtagsAPI = async () => {
   return instance.get(`/hashtags`)

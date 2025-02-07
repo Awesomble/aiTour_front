@@ -3,19 +3,18 @@ import { ref } from 'vue'
 import { useGlobalStore } from '@/store'
 
 const golbalStore = useGlobalStore()
-const drawer = ref(true)
 
 </script>
 
 <template>
   <v-navigation-drawer
+    v-model="golbalStore.isNavigation"
     color="white"
-    floating
-    permanent
+    temporary
   >
     <v-list-item
       link
-      title="ADMIN"
+      title="AIT Managing System"
       value="admin"
     />
     <v-divider />
@@ -33,12 +32,18 @@ const drawer = ref(true)
         exact
       />
       <v-list-item
-        title="Hashtag"
-        value="hashtag"
-        :to="{name: 'admin-hashtag'}"
+        title="Categories"
+        value="categories"
+        :to="{name: 'admin-categories'}"
         exact
       />
-      <a href="https://aitour-api.awesomble.com/places/download" target="_blank">
+      <v-list-item
+        title="Hashtags"
+        value="hashtags"
+        :to="{name: 'admin-hashtags'}"
+        exact
+      />
+      <a v-if="false" href="https://aitour-api.awesomble.com/places/download" target="_blank">
       <v-list-item
         title="Download"
         value="Download"

@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import AdminNavigation from '@/components/common/AdminNavigation.vue'
 import { useRoute } from 'vue-router'
+import { useGlobalStore } from '@/store'
+
+const golbalStore = useGlobalStore()
 
 const route = useRoute()
 </script>
@@ -13,6 +17,7 @@ const route = useRoute()
       color="white"
       density="compact"
     >
+      <v-app-bar-nav-icon variant="text" @click.stop="golbalStore.setNavi(!golbalStore.isNavigation)"></v-app-bar-nav-icon>
       <v-app-bar-title>{{ route.meta?.title }}</v-app-bar-title>
     </v-app-bar>
     <router-view v-slot="{ Component, route }">

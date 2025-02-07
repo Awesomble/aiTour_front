@@ -73,8 +73,16 @@ const router = createRouter({
           }
         },
         {
-          path: 'hashtag',
-          name: 'admin-hashtag',
+          path: 'categories',
+          name: 'admin-categories',
+          component: () => import('@/views/admin/Category.vue'),
+          meta: {
+            title: 'Category Manager'
+          }
+        },
+        {
+          path: 'hashtags',
+          name: 'admin-hashtags',
           component: () => import('@/views/admin/Hashtag.vue'),
           meta: {
             title: 'Hashtag Manager'
