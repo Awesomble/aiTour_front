@@ -6,7 +6,7 @@ const adminBaseURL = 'https://aitour-api.awesomble.com'
 export const adminInstance = () => {
   return axios.create({
     baseURL: adminBaseURL,
-    timeout: 5000,
+    timeout: 50000,
     withCredentials: true,
     headers: {
       Accept: 'application/json',

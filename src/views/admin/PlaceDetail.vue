@@ -161,7 +161,7 @@ const updatePlace = async () => {
   console.log(iptPlaceCategory.value)
   const res = await updatePlaceAPI(String(route.params.id), {
     name: iptPlaceName.value,
-    category: iptPlaceCategory.value,
+    category: typeof iptPlaceCategory.value === 'number' ? iptPlaceCategory.value : iptPlaceCategory.value.category_id,
     address: iptPlaceAddress.value,
     latitude: iptPlaceLatitude.value,
     longitude: iptPlaceLongitude.value,
