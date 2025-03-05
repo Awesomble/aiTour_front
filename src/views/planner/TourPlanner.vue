@@ -6,7 +6,6 @@ import dayjs from 'dayjs'
 const API_BASE_URL = import.meta.env?.VITE_APP_URL
 const planContainer = ref<HTMLDivElement | null>(null)
 const threadId = ref<string | null>(null)
-const message = ref<string>('')
 const responses = ref<{ id: number; content: string }[]>([])
 const responsesContent = ref<any>('')
 const iptPlan = ref<any | null>(null)
