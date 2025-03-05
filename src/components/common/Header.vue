@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useGlobalStore } from '@/store'
+import { useRouter } from 'vue-router'
 
 const golbalStore = useGlobalStore()
+const router = useRouter()
 const user = ref<object>(
   {
     initials: 'JD',
@@ -21,7 +23,7 @@ const user = ref<object>(
   >
     <!-- 왼쪽 콘텐츠 추가 -->
     <div class="d-flex align-center font-weight-black">
-      <h1 color="primary" class="text-button" style="font-size: 18px!important;">AITour</h1>
+      <h1 color="primary" class="text-button" style="font-size: 18px!important;">TRIPIECE</h1>
     </div>
     <v-spacer />
     <v-menu
@@ -50,13 +52,14 @@ const user = ref<object>(
               <span class="text-h5">{{ user.initials }}</span>
             </v-avatar>
             <h3>{{ user.fullName }}</h3>
-            <p class="text-caption mt-1">
+            <p class="text-caption mt-1" @click="router.push({name: 'auth'})">
               {{ user.email }}
             </p>
             <v-divider class="my-3"></v-divider>
             <v-btn
               variant="text"
               rounded
+              :to="{name: 'admin-dashboard'}"
             >
               Edit Account
             </v-btn>

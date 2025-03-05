@@ -5,3 +5,7 @@ declare module '*.vue' {
 }
 declare module 'vue3-markdown-it'
 declare module 'vue3-google-map'
+declare module 'js-cookie'
+declare module 'qs'
+declare module 'vue-toastification'
+declare module '@lucide/lab'

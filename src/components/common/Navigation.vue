@@ -5,7 +5,6 @@ import { useGlobalStore } from '@/store'
 const golbalStore = useGlobalStore()
 const drawer = ref(false)
 
-
 </script>
 
 <template>

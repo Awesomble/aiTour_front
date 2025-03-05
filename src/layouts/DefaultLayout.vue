@@ -2,6 +2,19 @@
 import Header from '@/components/common/Header.vue'
 import Bottom from '@/components/common/Bottom.vue'
 import Navigation from '@/components/common/Navigation.vue'
+import PlaceDetail from '@/components/dialogs/PlaceDetail.vue'
+import { onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
+
+
+onMounted(() => {
+  if (route.query.place) {
+    router.go(-1)
+  }
+})
 </script>
 
 <template>
@@ -14,6 +27,7 @@ import Navigation from '@/components/common/Navigation.vue'
       </keep-alive>
     </router-view>
   </v-main>
+  <PlaceDetail />
   <Bottom />
 </template>
 

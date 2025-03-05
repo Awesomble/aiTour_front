@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { nextTick, onActivated, onBeforeMount, onMounted, ref } from 'vue'
+import { onActivated, onMounted, ref } from 'vue'
 import Cookies from 'js-cookie'
 import { useGlobalStore } from '@/store'
-import photoZone from '@/assets/json/photoZone.json'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { getDrotectedAPI, getPlacesListAPI } from '@/network/app'
+import { Toilet, Camera } from 'lucide-vue-next'
 
 const route = useRoute()
+const router = useRouter()
 const golbalStore = useGlobalStore()
 const GPSInter = ref<any>(null)
 const center = ref<object>({ lat: 37.5663, lng: 126.9779 })
@@ -186,7 +188,7 @@ const mapStyle = [
     ]
   }
 ]
-const mountIdx = ref<number>(0)
+const mountIdx = ref<number | null>(null)
 let map: any
 
 const mapInit = async () => {
@@ -197,6 +199,7 @@ const mapInit = async () => {
       console.error('Google Maps가 올바르게 로드되지 않았습니다.')
       return
     }
+
     const { Map } = await google.maps.importLibrary('maps')
     map = new Map(document.getElementById('instMap'), {
       mapId: 'instMap',
@@ -233,33 +236,52 @@ const myLocationCall = () => {
     zoom.value = 15
   }
 }
+const activeList = ref<object[]>([])
+
 const activater = async () => {
-  const { type } = route.query
-  if (type) {
-    if (type === 'camera') {
-      const { photozone } = photoZone
-      const { AdvancedMarkerElement } = await google.maps.importLibrary('marker')
-      for (let i = 0; i < photozone.length; i++) {
-        const AdvancedMarkerElement = new google.maps.marker.AdvancedMarkerElement({
-          map,
-          content: makePlace(photozone[i].photos[0]),
-          position: {
-            lat: photozone[i].gps.lat,
-            lng: photozone[i].gps.lng
-          }
-        })
-        AdvancedMarkerElement.addListener('click', () => {
-          console.log(AdvancedMarkerElement, i)
-        })
-      }
+  const { AdvancedMarkerElement } = await google.maps.importLibrary('marker')
+  for (let i = 0; i < activeList.value?.length; i++) {
+    const item = activeList.value[i]
+    if (item.latitude && item.longitude) {
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        map,
+        content: makePlace(`<p class="i${item?.category?.category_id}">`),
+        position: {
+          lat: item.latitude,
+          lng: item.longitude
+        }
+      })
+      marker.addListener('click', () => {
+        handleMarkerClick(item.place_id) // 각 마커의 개별 ID로 함수 호출
+      })
     }
   }
 }
-const makePlace = (url) => {
+const handleMarkerClick = (id: string) => {
+  router.push({query: {place: id}})
+}
+
+const makePlace = (inner: string) => {
   const content = document.createElement('div')
   content.classList.add('pin')
-  content.innerHTML = `<img src="${url}" /><`
+  content.innerHTML = inner
   return content
+}
+const page: number = 1
+const limit: number = 50
+
+const mountFN = async (id: number[], idx: number) => {
+  mountIdx.value = idx
+  activeList.value = []
+  const res = await getPlacesListAPI(page, limit, id)
+  if (res?.status === 200) {
+    activeList.value = res.data?.items
+    activater()
+  }
+}
+const getDrotected = async () => {
+  const res = await getDrotectedAPI()
+  console.log(res)
 }
 onActivated(() => {
   activater()
@@ -267,22 +289,27 @@ onActivated(() => {
 onMounted(() => {
   setGPS()
   mapInit()
+  getDrotected ()
   GPSInter.value = setInterval(() => {
     setGPS()
   }, 3000)
 })
 </script>
 <template>
-  <v-container class="pa-0 h-100">
+  <v-container class="pa-0 h-100 w-100" style="max-width: 100%">
     <div id="instMap" class="h-100" />
-    <div class="mounter" :class="`active${mountIdx}`">
+    <div class="mounter">
       <ul>
-        <li><a href="javascript:" @click="mountIdx = 0"><v-icon icon="mdi-camera-account" /></a></li>
-        <li><a href="javascript:" @click="mountIdx = 1"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:" @click="mountIdx = 2"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:" @click="mountIdx = 3"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:" @click="mountIdx = 4"><v-icon icon="mdi-toilet" /></a></li>
-        <li><a href="javascript:" @click="mountIdx = 5" style="font-size: 20px;">🇰🇷</a></li>
+        <li>
+          <v-btn :color="mountIdx === 0 ? 'primary' : 'white'" @click="mountFN([83], 0)" icon>
+            <Camera :stroke-width="1" />
+          </v-btn>
+        </li>
+        <li>
+          <v-btn :color="mountIdx === 1 ? 'primary' : 'white'" @click="mountFN([77, 82], 1)" icon>
+            <Toilet :stroke-width="1" />
+          </v-btn>
+        </li>
       </ul>
     </div>
     <v-btn
@@ -300,11 +327,6 @@ onMounted(() => {
   right: 20px;
   bottom: 140px;
   z-index: 99;
-  width: 50px;
-  border: 4px solid #1483c2;
-  border-radius: 50px;
-  background-color: #fff;
-  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.2);
   ul {
     display: flex;
     align-items: center;
@@ -317,68 +339,43 @@ onMounted(() => {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        border: 4px solid #1483c2;
+        border-radius: 50px;
         background-color: #fff;
         color: #000;
         font-size: 14px;
       }
     }
   }
-  &::after {
-    content: '';
-    position: absolute;
-    left: 1px;
-    top: 2px;
-    display: flex;
-    width: 40px;
-    height: 40px;
-    border: 4px solid #1483c2;
-    border-radius: 50%;
-    transition: .3s top ease-in-out;
-  }
-  &.active0::after {
-    top: 2px;
-  }
-  &.active1::after {
-    top: 44px;
-  }
-  &.active2::after {
-    top: 84px;
-  }
-  &.active3::after {
-    top: 124px;
-  }
-  &.active4::after {
-    top: 164px;
-  }
-  &.active5::after {
-    top: 206px;
-  }
-  &.active6::after {
-    top: 234px;
-  }
-  &.active6::after {
-    top: 273px;
-  }
-  &.active7::after {
-    top: 312px;
-  }
-  &.active8::after {
-    top: 351px;
-  }
-  &.active9::after {
-    top: 390px;
-  }
 }
 .pin {
   border-radius: 50% 50% 50% 0;
   border: 4px solid #1483c2;
-  width: 40px;
-  height: 40px;
+  background-color: #1483c2;
+  width: 25px;
+  height: 25px;
   transform: rotate(-45deg);
   overflow: hidden;
+  p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: -4px;
+    font-size: 16px;
+    color: #fff;
+    transform: rotate(45deg);
+  }
+  p.i83:after {
+    content: "📷";
+  }
+  p.i77:after {
+    content: "🚻";
+  }
+  p.i82:after {
+    content: "👶";
+  }
 }
 
 .pin img {

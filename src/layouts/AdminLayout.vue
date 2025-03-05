@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import AdminNavigation from '@/components/common/AdminNavigation.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useGlobalStore } from '@/store'
 
 const golbalStore = useGlobalStore()
 
 const route = useRoute()
+const router = useRouter()
+
 </script>
 
 <template>
@@ -18,7 +20,7 @@ const route = useRoute()
       density="compact"
     >
       <v-app-bar-nav-icon variant="text" @click.stop="golbalStore.setNavi(!golbalStore.isNavigation)"></v-app-bar-nav-icon>
-      <v-app-bar-title>{{ route.meta?.title }}</v-app-bar-title>
+      <v-app-bar-title><v-btn v-if="route.name !== 'admin-dashboard'" icon="mdi-arrow-left-circle" variant="text" @click="router.go(-1)" />{{ route.meta?.title }}</v-app-bar-title>
     </v-app-bar>
     <router-view v-slot="{ Component, route }">
       <v-layout class="pa-4">

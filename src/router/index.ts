@@ -5,6 +5,25 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      name: 'full-layout',
+      component: () => import('@/layouts/FullLayout.vue'),
+      children: [
+        {
+          path: '/auth',
+          name: 'auth',
+          component: () => import('@/views/auth/Auth.vue'),
+          meta: {}
+        },
+        {
+          path: '/signin',
+          name: 'signin',
+          component: () => import('@/views/auth/Signin.vue'),
+          meta: {}
+        }
+      ]
+    },
+    {
+      path: '/',
       name: 'default-layout',
       redirect: 'home',
       component: () => import('@/layouts/DefaultLayout.vue'),
@@ -90,16 +109,19 @@ const router = createRouter({
         }
       ]
     },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('@/views/error/Error404.vue'),
+    }
   ],
-  linkActiveClass: 'active', // 활성화된 링크에 적용되는 기본 클래스
-  linkExactActiveClass: 'exact-active', // 정확히 일치하는 링크에만 적용
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
-      return savedPosition;
+      return savedPosition
     } else {
-      return { top: 0 };
+      return { top: 0 }
     }
-  },
+  }
 })
 
 export default router

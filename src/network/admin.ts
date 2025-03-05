@@ -1,11 +1,15 @@
 import { adminInstance } from '@/network/instance'
 import { RouteParamValue } from 'vue-router'
+import qs from 'qs'
 
 // Axios 인스턴스를 미리 생성
 const instance = adminInstance()
 
-export const getPlacesAPI = async () => {
-  return instance.get(`/places`)
+export const getPlacesAPI = async (page: number, category: number[], name: string, address: string) => {
+  return instance.get(`/places`, {
+    params: {page, category, name, address},
+    paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
+  })
 }
 export const getPlacesDetailAPI = async (place_id: string | RouteParamValue[]) => {
   return instance.get(`/places/${place_id}`)
@@ -64,3 +68,8 @@ export const addHashtagsAPI = async (payload: object) => {
 export const delHashtagsAPI = async (hashtag_id: number) => {
   return instance.delete(`/hashtags/${hashtag_id}`)
 }
+export const getJsonAPI = async () => {
+  return instance.get(`/places/detailed/file`)
+}
+
+

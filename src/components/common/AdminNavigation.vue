@@ -4,12 +4,20 @@ import { useGlobalStore } from '@/store'
 
 const golbalStore = useGlobalStore()
 
+const getJson = async () => {
+  const link = document.createElement('a')
+  link.href = 'http://localhost:8000/places/detailed/file'
+  link.download = 'places.json'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 </script>
 
 <template>
   <v-navigation-drawer
     v-model="golbalStore.isNavigation"
-    color="white"
+    color="#444"
     temporary
   >
     <v-list-item
@@ -43,13 +51,12 @@ const golbalStore = useGlobalStore()
         :to="{name: 'admin-hashtags'}"
         exact
       />
-      <a v-if="false" href="https://aitour-api.awesomble.com/places/download" target="_blank">
       <v-list-item
         title="Download"
         value="Download"
         exact
+        @click="getJson"
       />
-      </a>
     </v-list>
     <v-spacer></v-spacer>
   </v-navigation-drawer>
