@@ -175,9 +175,9 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   console.log('to: ', to)
-  alert(to)
   if (to.meta.requiresAuth) {
     try {
+      console.log('user call')
       const user = await getCurrentUser()
       console.log('user: ', user)
       if (!user) {
@@ -190,6 +190,7 @@ router.beforeEach(async (to, from, next) => {
         next()
       }
     } catch {
+      console.log('user error')
       return next({
         path: '/signin',
         query: { redirect: to.fullPath }
