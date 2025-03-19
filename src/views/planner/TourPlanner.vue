@@ -179,8 +179,8 @@ const checkThread = async () => {
   else await createThread()
 }
 onActivated( async () => {
-  await checkThread()
-  if (!iptPlan.value) myPlanDialog.value = true
+  // await checkThread()
+  // if (!iptPlan.value) myPlanDialog.value = true
 })
 onBeforeMount(async () => {
 })
@@ -196,7 +196,10 @@ onBeforeUnmount(() => {})
 </script>
 
 <template>
-  <div class="tour-planner">
+  <v-container class="pa-2">
+    개발중
+  </v-container>
+  <div class="tour-planner" v-if="false">
     <div class="map-section">
 <!--      <GMapMap-->
 <!--        :center="mapCenter"-->
@@ -209,7 +212,7 @@ onBeforeUnmount(() => {})
     </div>
 
     <!-- 하단 리스트 섹션 -->
-    <div class="list-section">
+    <div class="list-section" v-if="false">
       <v-slide-x-reverse-transition group>
         <v-container>
           <v-row v-if="!iptPlan" class="d-flex justify-center align-center fill-height">
@@ -336,7 +339,7 @@ onBeforeUnmount(() => {})
     </div>
   </div>
   <v-btn class="btn-floating" icon="mdi-airplane" color="primary" @click="myPlanDialog = true" />
-  <MyPlanDialog :is-show="myPlanDialog" @close="myPlanDialog = false" @update="updatePlanCall" />
+<!--  <MyPlanDialog :is-show="myPlanDialog" @close="myPlanDialog = false" @update="updatePlanCall" />-->
 </template>
 
 <style lang="scss">

@@ -11,6 +11,7 @@ const router = useRouter()
 
 <template>
   <v-container class="pa-2">
+    개발중
   </v-container>
 </template>
 

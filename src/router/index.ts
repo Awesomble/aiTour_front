@@ -9,7 +9,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'default-layout',
-      redirect: 'main-home',
+      redirect: 'mainHome',
       component: () => import('@/layouts/DefaultLayout.vue'),
       children: [
         {
@@ -95,6 +95,7 @@ const router = createRouter({
     {
       path: '/admin',
       name: 'admin-layout',
+      redirect: 'dashboard',
       component: () => import('@/layouts/AdminLayout.vue'),
       children: [
         {

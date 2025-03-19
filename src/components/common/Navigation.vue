@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useGlobalStore, useUserStore } from '@/store'
 import { getInitials } from '@/plugins/utils'
-import { Home, MapPin, Sparkles, Briefcase, LogOut } from 'lucide-vue-next'
+import { Home, MapPin, Sparkles, Briefcase, Cog } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -15,6 +15,9 @@ const chatAcceptance = ref(true)
 const isActive = (routeName: string) => {
   return computed(() => route.name === routeName)
 }
+onBeforeUnmount(() => {
+  golbalStore.setNavi(false)
+})
 </script>
 
 <template>
@@ -31,7 +34,10 @@ const isActive = (routeName: string) => {
         <span v-else class="text-body-1 text-white">{{ getInitials(userStore.userInfo?.user_name) }}</span>
       </v-avatar>
       <div class="user-info">
-        <div class="username">{{ userStore.userInfo?.user_name || 'Guest' }}</div>
+        <div class="username-container">
+          <div class="username">{{ userStore.userInfo?.user_name || 'Guest' }}</div>
+          <v-chip v-if="userStore.userInfo?.groups?.includes('admin')" size="x-small" color="error" class="admin-badge">관리자</v-chip>
+        </div>
         <v-btn
           class="profile-edit-btn"
           variant="text"
@@ -47,6 +53,11 @@ const isActive = (routeName: string) => {
 
     <!-- 메인 메뉴 -->
     <div class="menu-section">
+      <router-link v-if="userStore.userInfo?.groups?.includes('admin')" :to="{ name: 'admin-dashboard' }" class="menu-item red" :class="{ 'active': isActive('admin-dashboard').value }">
+        <Cog :size="20" :stroke-width="isActive('admin-dashboard').value ? 2.5 : 1.8" />
+        <span>ADMIN</span>
+      </router-link>
+
       <router-link :to="{ name: 'main-home' }" class="menu-item" :class="{ 'active': isActive('home').value }">
         <Home :size="20" :stroke-width="isActive('main-home').value ? 2.5 : 1.8" />
         <span>Home</span>
@@ -127,7 +138,16 @@ const isActive = (routeName: string) => {
   font-size: 0.95rem;
   margin-bottom: 4px;
 }
+.username-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
+.admin-badge {
+  font-size: 10px;
+  height: 16px !important;
+}
 .profile-edit-btn {
   align-self: flex-start;
   height: 24px;
@@ -156,6 +176,9 @@ const isActive = (routeName: string) => {
   font-weight: 400;
   font-size: 0.9rem;
   transition: all 0.15s ease;
+  &.red {
+    background-color: rgba(255, 0, 0, 0.1);
+  }
 }
 
 .menu-item:hover {
