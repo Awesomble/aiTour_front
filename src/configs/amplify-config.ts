@@ -12,8 +12,8 @@ const amplifyConfig = {
         oauth: {
           domain: 'ap-northeast-2goxcycyrq.auth.ap-northeast-2.amazoncognito.com',
           scopes: ['email', 'openid', 'profile'],
-          redirectSignIn: ['https://aitour.awesomble.com/authComplate', 'http://localhost:9000/authComplate'],
-          redirectSignOut: ['https://aitour.awesomble.com/mainHome', 'http://localhost:9000/mainHome'],
+          redirectSignIn: ['https://aitour.awesomble.com/', 'http://localhost:9000/'],
+          redirectSignOut: ['https://aitour.awesomble.com/', 'http://localhost:9000/'],
           responseType: 'code'
         }
       }

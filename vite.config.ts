@@ -36,7 +36,7 @@ export default defineConfig({
   ],
   define: { 'process.env': {} },
   server: {
-    port: 3333
+    port: 9000
   },
   build: {
     target: 'es2015',
