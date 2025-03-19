@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-// import { userManager, signOutRedirect } from '@/plugins/auth' // auth.ts 경로에 맞게 조정
 import { signInWithRedirect, getCurrentUser, signOut, fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth'
 const route = useRoute()
 

@@ -1,3 +1,5 @@
+const isDev = process.env.NODE_ENV === 'development';
+
 const amplifyConfig = {
   Auth: {
     Cognito: {
@@ -10,12 +12,17 @@ const amplifyConfig = {
         oauth: {
           domain: 'ap-northeast-2goxcycyrq.auth.ap-northeast-2.amazoncognito.com',
           scopes: ['email', 'openid', 'profile'],
-          redirectSignIn: ['http://localhost:9000/authComplate', 'https://aitour.awesomble.com/authComplate'],
-          redirectSignOut: ['http://localhost:9000/home', 'https://aitour.awesomble.com/home'],
+          redirectSignIn: isDev
+            ? ['http://localhost:9000/authComplate']
+            : ['https://aitour.awesomble.com/authComplate'],
+          redirectSignOut: isDev
+            ? ['http://localhost:9000/home']
+            : ['https://aitour.awesomble.com/home'],
           responseType: 'code'
         }
       }
     }
   }
 }
-export default amplifyConfig
+
+export default amplifyConfig;
