@@ -26,7 +26,7 @@ Amplify.configure(amplifyConfig)
 const app = createApp(App)
 const toastOptions = {
   position: 'bottom-center',
-  timeout: 3000,
+  timeout: 5000,
   closeOnClick: true,
   pauseOnFocusLoss: false,
   pauseOnHover: true,

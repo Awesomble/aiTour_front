@@ -15,7 +15,9 @@ const useUserStore = defineStore('user', () => {
 
   async function getUserInfo() {
     try {
+      console.log('currentUser-->')
       const currentUser = await getCurrentUser()
+      console.log('currentUser:', currentUser)
       const authSession = await fetchAuthSession()
       user.value = currentUser
       console.log(user.value)

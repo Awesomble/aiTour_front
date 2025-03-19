@@ -29,6 +29,19 @@ const getCountryFlagUrl = (countryCode: string) => {
   return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`
 }
 
+// 로그아웃 처리 함수
+const handleLogout = async () => {
+  try {
+    await userStore.signOutUser()
+    await router.push({name: 'main-home'})
+    toast.info('로그아웃 되었습니다')
+  } catch (error) {
+    console.error('로그아웃 에러:', error)
+    toast.error('로그아웃 중 오류가 발생했습니다')
+  } finally {
+  }
+}
+
 // Define form validation rules
 const rules = {
   required: (v: string) => !!v || 'Field is required',
@@ -549,7 +562,7 @@ onBeforeMount(async () => {
       </v-sheet>
 
       <!-- App version info -->
-      <div class="app-version-section d-flex align-center mt-4 mb-6">
+      <div class="app-version-section d-flex align-center mt-4 mb-4">
         <div class="app-version-label flex-grow-1">앱 버전 정보</div>
         <div class="d-flex align-center">
           <span class="version-number mr-2">전체버전 {{ appVersion }}</span>
@@ -565,6 +578,19 @@ onBeforeMount(async () => {
           </v-btn>
         </div>
       </div>
+
+      <!-- 로그아웃 버튼 -->
+      <v-btn
+        block
+        color="error"
+        variant="text"
+        height="48"
+        class="logout-btn mt-4 mb-6"
+        prepend-icon="mdi-logout"
+        @click="handleLogout"
+      >
+        로그아웃
+      </v-btn>
     </div>
   </v-container>
 </template>
@@ -746,5 +772,20 @@ onBeforeMount(async () => {
   max-width: 100%;
   object-fit: cover;
   border-radius: 2px;
+}
+
+/* 로그아웃 버튼 스타일 */
+.logout-btn {
+  border-radius: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  font-size: 14px;
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+.logout-btn:hover {
+  background-color: rgba(244, 67, 54, 0.04);
 }
 </style>
