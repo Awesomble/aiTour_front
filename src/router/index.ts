@@ -174,6 +174,8 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
+  console.log('to: ', to)
+  alert(to)
   if (to.meta.requiresAuth) {
     try {
       const user = await getCurrentUser()
