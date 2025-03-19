@@ -183,12 +183,10 @@ router.beforeEach(async (to, from, next) => {
           path: '/signin',
           query: { redirect: to.fullPath }
         }) // 로그인 페이지나 로그인 로직 호출
+      } else {
+        next()
       }
-      // 2) 토큰 추출
-      // const { tokens } = await fetchAuthSession()
-      // const token = tokens?.accessToken?.jwtToken
     } catch {
-      // toast.error('로그인이 필요합니다.')
       return next({
         path: '/signin',
         query: { redirect: to.fullPath }
