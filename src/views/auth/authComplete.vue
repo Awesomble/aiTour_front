@@ -7,9 +7,9 @@ onMounted(async () => {
   await nextTick()
   const redirectPath = localStorage.getItem('redirectPath')
   if (redirectPath) {
-    router.push(redirectPath)
+    await router.push(redirectPath)
     console.log(redirectPath)
     localStorage.removeItem('redirectPath')
-  } else router.push({name: 'main-home'})
+  } else await router.push({name: 'main-home'})
 })
 </script>

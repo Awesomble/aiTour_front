@@ -37,6 +37,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'safari-pinned-tab.svg'],
+      manifestFilename: 'manifest.webmanifest', // 명시적으로 파일명 지정
       manifest: {
         name: 'ViteTemplate',
         short_name: 'ViteTemplate',
