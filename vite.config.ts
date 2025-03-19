@@ -34,34 +34,6 @@ export default defineConfig({
       }
     }),
     tsconfigPaths(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'safari-pinned-tab.svg'],
-      manifestFilename: 'manifest.webmanifest', // 명시적으로 파일명 지정
-      manifest: {
-        name: 'ViteTemplate',
-        short_name: 'ViteTemplate',
-        theme_color: '#ffffff',
-        icons: [
-          {
-            src: '/pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      }
-    })
   ],
   define: { 'process.env': {} },
   server: {
