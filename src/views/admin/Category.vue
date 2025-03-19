@@ -100,6 +100,9 @@ onBeforeMount(() => {
               :items="categories"
               :search="iptSearch"
             >
+              <template v-slot:item.name="{ item }">
+                <router-link :to="{ name: 'admin-categories-detail', params: { id: item?.category_id } }">{{ item?.name }}</router-link>
+              </template>
               <template v-slot:item.action="{ item }">
                 <v-btn density="compact" color="red" @click="delHashtag(item.hashtag_id)">삭제</v-btn>
               </template>

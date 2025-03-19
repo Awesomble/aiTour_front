@@ -3,8 +3,8 @@ import { defineStore } from 'pinia'
 
 type Tokens = {
   accessToken: string,
-  idToken: string,
-  refreshToken: string
+  idToken?: string,
+  refreshToken?: string
 }
 
 const useAuthStore = defineStore('auth', () => {

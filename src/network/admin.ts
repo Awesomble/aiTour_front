@@ -45,6 +45,9 @@ export const delSpecialDaysAPI = async (place_id: string, special_day_id: number
 export const uploadPlaceFileAPI = async (place_id: string, payload: any) => {
   return instance.post(`/photos/upload/${place_id}`, payload, { headers: { 'Content-Type': 'multipart/form-data' }})
 }
+export const uploadLandmarkFileAPI = async (place_id: string, payload: any) => {
+  return instance.post(`/photos/upload-landmark/${place_id}`, payload, { headers: { 'Content-Type': 'multipart/form-data' }})
+}
 export const delPlaceFileAPI = async (place_id: string, photo_id: string) => {
   return instance.delete(`/photos/places/${place_id}/photos/${photo_id}`)
 }
@@ -52,8 +55,14 @@ export const delPlaceFileAPI = async (place_id: string, photo_id: string) => {
 export const getCategoriesAPI = async () => {
   return instance.get(`/categories`)
 }
+export const getCategoriesDetailAPI = async (id: string) => {
+  return instance.get(`/categories/${id}`)
+}
 export const addCategoriesAPI = async (payload: object) => {
   return instance.post(`/categories`, payload)
+}
+export const putCategoriesAPI = async (id: string, payload: object) => {
+  return instance.put(`/categories/${id}`, payload)
 }
 export const delCategoriesAPI = async (category_id: number) => {
   return instance.delete(`/categories/${category_id}`)

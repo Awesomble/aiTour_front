@@ -32,7 +32,7 @@ const rules = ref({
 })
 
 const addHashtag = async () => {
-  const { valid } = await formRef.value.validate()
+  const { valid } = await formRef.value?.validate()
   console.log(valid)
   if (!valid) return; // Prevent submission if form is invalid
   const res = await addHashtagsAPI({ name: iptHashtag.value })

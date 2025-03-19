@@ -11,7 +11,7 @@ import {
   delSpecialDaysAPI,
   uploadPlaceFileAPI,
   delPlaceFileAPI,
-  getCategoriesAPI
+  getCategoriesAPI, uploadLandmarkFileAPI
 } from '@/network/admin'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
@@ -24,6 +24,7 @@ const route = useRoute()
 const toast = useToast()
 const formRef = ref<HTMLFormElement | null>(null)
 const placeFileRef = ref<HTMLFormElement | null>(null)
+const landmarkFileRef = ref<HTMLFormElement | null>(null)
 const hashtags = ref<object[]>([])
 const photos = ref<object[]>([])
 const hasHashtags = ref<number[]>([])
@@ -36,6 +37,8 @@ const iptPlaceLongitude = ref<number | null>(null)
 const iptPlaceDescriptionCheck = ref<string[]>([])
 const iptPlaceDescription = ref<object[]>([])
 const iptDuration = ref<number | null>(null)
+const iptLandmarkUrl = ref('') // New field for landmark URL
+const landmarkPreview = ref('') // For visual preview
 const menus = ref<object[]>([])
 const iptSearch = ref<string>('')
 const iptSpecialday = ref<any>(null)
@@ -210,6 +213,8 @@ const getPlacesDetail = async () => {
     iptPlaceLatitude.value = res?.data?.latitude
     iptPlaceLongitude.value = res?.data?.longitude
     iptDuration.value = res?.data?.duration
+    iptLandmarkUrl.value = res?.data?.landmark_url || '' // Load landmark URL from API
+    landmarkPreview.value = res?.data?.landmark_url || '' // Set preview as well
     menus.value = res?.data?.menus
     hasHashtags.value = res?.data?.hashtags
     photos.value = res?.data?.photos
@@ -238,6 +243,7 @@ const updatePlace = async () => {
     latitude: iptPlaceLatitude.value,
     longitude: iptPlaceLongitude.value,
     duration: Number(iptDuration.value),
+    landmark_url: iptLandmarkUrl.value, // Include landmark_url in update
     descriptions: iptPlaceDescription.value,
     menus: menus.value,
     operating_hours: sanitizedData,
@@ -248,10 +254,6 @@ const updatePlace = async () => {
     toast.success('Success Updated Place')
     return
   }
-  // toast.info("Info toast");
-  // toast.success("Success toast");
-  // toast.error("Error toast");
-  // toast.warning("Warning toast");
   toast.error('Error Updating Place')
 }
 const getCategories = async () => {
@@ -345,9 +347,12 @@ const checkSpecialDays = async () => {
     }
   }
 }
-const thumbUpload = async (file: File) => {
+
+// Process and upload image file (common function for both regular photos and landmark images)
+const processImageUpload = async (file: File, isLandmark: boolean = false) => {
+  console.log(file)
   // HEIC 파일인 경우 JPEG로 변환
-  if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+  if (file?.type === 'image/heic' || file?.name.toLowerCase().endsWith('.heic')) {
     try {
       const convertedBlob = await heic2any({
         blob: file,
@@ -394,11 +399,26 @@ const thumbUpload = async (file: File) => {
       canvas.toBlob(
         async (blob) => {
           if (blob) {
+            let res: any = null
             const formData = new FormData()
             formData.append('file', blob, file.name)
-            const res = await uploadPlaceFileAPI(String(route.params.id), formData)
-            console.log(res)
-            getPlacesDetail()
+
+            // For landmark uploads, set a special flag
+            if (isLandmark) {
+              formData.append('is_landmark', 'true')
+              res = await uploadLandmarkFileAPI(String(route.params.id), formData)
+            } else {
+              res = await uploadPlaceFileAPI(String(route.params.id), formData)
+            }
+            // If this is a landmark image, update the landmark_url field
+            if (isLandmark && res?.status === 200 && res?.data?.url) {
+              iptLandmarkUrl.value = res.data.url
+              landmarkPreview.value = res.data.url
+              toast.success('Landmark image uploaded successfully')
+            } else {
+              // Otherwise, refresh all place data
+              getPlacesDetail()
+            }
           }
         },
         file.type,
@@ -407,11 +427,23 @@ const thumbUpload = async (file: File) => {
     }
   }
 }
+
+// Regular photo upload
+const thumbUpload = async (file: File) => {
+  await processImageUpload(file)
+}
+
+// Landmark image upload
+const landmarkUpload = async (file: File) => {
+  await processImageUpload(file, true)
+}
+
 const delPlaceFile = async (file: any) => {
   const res = await delPlaceFileAPI(String(route.params.id), String(file.photo_id))
   console.log(res)
   getPlacesDetail()
 }
+
 const changeGeocode = async () => {
   if (!iptPlaceAddress.value) return
   if (!google.maps) {
@@ -446,18 +478,44 @@ const showMap = async () => {
   if (iptPlaceLatitude.value == null || iptPlaceLongitude.value == null) {
     return
   }
+
   try {
     const { Map } = await google.maps.importLibrary('maps')
+    const { Marker } = await google.maps.importLibrary('marker')
+
+    // Create map
     const map = new Map(mapDiv, {
       center: { lat: iptPlaceLatitude.value, lng: iptPlaceLongitude.value },
       zoom: 17,
       disableDefaultUI: true
     })
-    const { Marker } = await google.maps.importLibrary('marker')
-    new Marker({
+
+    // Create marker
+    let marker = new Marker({
       map,
       position: { lat: iptPlaceLatitude.value, lng: iptPlaceLongitude.value },
-      title: 'Place Location'
+      title: 'Place Location',
+      draggable: true // Make marker draggable
+    })
+
+    // Add click listener to the map
+    map.addListener('click', (event) => {
+      // Update marker position
+      marker.setPosition(event.latLng)
+
+      // Update the latitude and longitude fields
+      iptPlaceLatitude.value = event.latLng.lat()
+      iptPlaceLongitude.value = event.latLng.lng()
+    })
+
+    // Add drag end listener to the marker
+    marker.addListener('dragend', () => {
+      const position = marker.getPosition()
+      if (position) {
+        // Update the latitude and longitude fields
+        iptPlaceLatitude.value = position.lat()
+        iptPlaceLongitude.value = position.lng()
+      }
     })
   } catch (error) {
     console.error('Error initializing map:', error)
@@ -494,9 +552,21 @@ const initializeMobiscroll = async () => {
     console.error('Mobiscroll input element not found')
   }
 }
+
 const placeFileUpload = () => {
   placeFileRef.value?.click()
 }
+
+const landmarkFileUpload = () => {
+  landmarkFileRef.value?.click()
+}
+
+// Function to clear the landmark image
+const clearLandmarkUrl = () => {
+  iptLandmarkUrl.value = ''
+  landmarkPreview.value = ''
+}
+
 // 초기 실행
 onMounted(async () => {
   await initializeMobiscroll()
@@ -554,6 +624,7 @@ onUnmounted(() => {
                     </template>
                   </v-autocomplete>
                 </v-col>
+                <!-- Landmark URL Field -->
                 <v-col cols="12">
                   <v-text-field
                     v-model="iptPlaceAddress"
@@ -605,6 +676,61 @@ onUnmounted(() => {
                     suffix="min"
                     hide-details
                     clearable
+                  />
+                </v-col>
+                <v-col cols="12">
+                  <div class="d-flex align-center gap-3 mb-3">
+                    <div class="text-subtitle-2">Landmark Image</div>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                      size="small"
+                      color="primary"
+                      density="compact"
+                      variant="text"
+                      prepend-icon="mdi-upload"
+                      @click="landmarkFileUpload"
+                    >
+                      Upload
+                    </v-btn>
+                    <v-btn
+                      v-if="landmarkPreview"
+                      size="small"
+                      color="error"
+                      density="compact"
+                      variant="text"
+                      prepend-icon="mdi-delete"
+                      @click="clearLandmarkUrl"
+                    >
+                      Remove
+                    </v-btn>
+                  </div>
+
+                  <div v-if="iptLandmarkUrl" class="d-flex gap-2">
+                    <!-- Preview area (smaller height) -->
+                    <div class="landmark-preview flex-grow-0 mr-2" style="width: 120px">
+                      <v-img
+                        :src="landmarkPreview"
+                        height="80"
+                      />
+                    </div>
+
+                    <!-- URL input field -->
+                    <v-textarea
+                      v-model="iptLandmarkUrl"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                      readonly
+                      rows="3"
+                    />
+                  </div>
+
+                  <!-- Hidden file input -->
+                  <v-file-input
+                    ref="landmarkFileRef"
+                    accept="image/png, image/jpeg, image/bmp, image/heic"
+                    class="d-none"
+                    @update:modelValue="landmarkUpload"
                   />
                 </v-col>
                 <v-col cols="12">
@@ -736,74 +862,74 @@ onUnmounted(() => {
                       <v-card-text>
                         <v-table class="text-caption" density="compact">
                           <tbody>
-                            <tr align="right">
-                              <th>Close</th>
-                              <td>
-                                <v-switch
-                                  v-model="t.is_closed"
-                                  hide-details
-                                  density="compact"
-                                  color="primary"
-                                ></v-switch>
-                              </td>
-                            </tr>
-                            <tr v-if="!t.is_closed">
-                              <th>OpenTime</th>
-                              <td>
-                                <v-text-field
-                                  v-model="t.open_time"
-                                  density="compact"
-                                  variant="outlined"
-                                  placeholder="09:00:00"
-                                  hide-details
-                                  clearable
-                                />
-                              </td>
-                            </tr>
-                            <tr v-if="!t.is_closed">
-                              <th>CloseTime</th>
-                              <td>
-                                <v-text-field
-                                  v-model="t.close_time"
-                                  density="compact"
-                                  variant="outlined"
-                                  placeholder="22:00:00"
-                                  hide-details
-                                  clearable
-                                />
-                              </td>
-                            </tr>
-                            <tr v-if="!t.is_closed">
-                              <th>BreakStart</th>
-                              <td>
-                                <v-text-field
-                                  v-model="t.break_start"
-                                  density="compact"
-                                  variant="outlined"
-                                  placeholder="14:00:00"
-                                  hide-details
-                                  clearable
-                                />
-                              </td>
-                            </tr>
-                            <tr v-if="!t.is_closed">
-                              <th>BreakEne</th>
-                              <td>
-                                <v-text-field
-                                  v-model="t.break_end"
-                                  density="compact"
-                                  variant="outlined"
-                                  placeholder="17:00:00"
-                                  hide-details
-                                  clearable
-                                />
-                              </td>
-                            </tr>
+                          <tr align="right">
+                            <th>Close</th>
+                            <td>
+                              <v-switch
+                                v-model="t.is_closed"
+                                hide-details
+                                density="compact"
+                                color="primary"
+                              ></v-switch>
+                            </td>
+                          </tr>
+                          <tr v-if="!t.is_closed">
+                            <th>OpenTime</th>
+                            <td>
+                              <v-text-field
+                                v-model="t.open_time"
+                                density="compact"
+                                variant="outlined"
+                                placeholder="09:00:00"
+                                hide-details
+                                clearable
+                              />
+                            </td>
+                          </tr>
+                          <tr v-if="!t.is_closed">
+                            <th>CloseTime</th>
+                            <td>
+                              <v-text-field
+                                v-model="t.close_time"
+                                density="compact"
+                                variant="outlined"
+                                placeholder="22:00:00"
+                                hide-details
+                                clearable
+                              />
+                            </td>
+                          </tr>
+                          <tr v-if="!t.is_closed">
+                            <th>BreakStart</th>
+                            <td>
+                              <v-text-field
+                                v-model="t.break_start"
+                                density="compact"
+                                variant="outlined"
+                                placeholder="14:00:00"
+                                hide-details
+                                clearable
+                              />
+                            </td>
+                          </tr>
+                          <tr v-if="!t.is_closed">
+                            <th>BreakEne</th>
+                            <td>
+                              <v-text-field
+                                v-model="t.break_end"
+                                density="compact"
+                                variant="outlined"
+                                placeholder="17:00:00"
+                                hide-details
+                                clearable
+                              />
+                            </td>
+                          </tr>
                           </tbody>
                         </v-table>
                         <v-divider class="py-2" v-if="idx === 0" />
                         <v-btn v-if="idx === 0" color="red" block @click="applyToAll"
-                          >Apply to all days</v-btn
+                        >Apply to all days</v-btn
                         >
                       </v-card-text>
                     </div>
@@ -814,7 +940,7 @@ onUnmounted(() => {
               <v-divider class="py-2" />
 
               <v-btn block @click.prevent="updatePlace" color="primary"
-                ><strong>Update</strong></v-btn
+              ><strong>Update</strong></v-btn
               >
             </v-card-text>
           </v-form>
@@ -895,14 +1021,14 @@ onUnmounted(() => {
                   density="compact"
                   color="blue"
                   @click="addPlaceHashtag(item.hashtag_id)"
-                  >추가</v-btn
+                >추가</v-btn
                 >
                 <v-btn
                   v-else
                   density="compact"
                   color="red"
                   @click="delPlaceHashtag(item.hashtag_id)"
-                  >삭제</v-btn
+                >삭제</v-btn
                 >
               </template>
             </v-data-table-virtual>
@@ -917,82 +1043,82 @@ onUnmounted(() => {
           <v-card-text v-if="iptSpecialday">
             <v-table class="text-caption" density="compact">
               <tbody>
-                <tr align="right">
-                  <th>Close</th>
-                  <td>
-                    <v-switch
-                      v-model="iptSpecialdayDetail.is_closed"
-                      hide-details
-                      density="compact"
-                      color="primary"
-                    ></v-switch>
-                  </td>
-                </tr>
-                <tr v-if="!iptSpecialdayDetail.is_closed">
-                  <th>OpenTime</th>
-                  <td>
-                    <v-text-field
-                      v-model="iptSpecialdayDetail.open_time"
-                      density="compact"
-                      variant="outlined"
-                      placeholder="09:00:00"
-                      hide-details
-                      clearable
-                    />
-                  </td>
-                </tr>
-                <tr v-if="!iptSpecialdayDetail.is_closed">
-                  <th>CloseTime</th>
-                  <td>
-                    <v-text-field
-                      v-model="iptSpecialdayDetail.close_time"
-                      density="compact"
-                      variant="outlined"
-                      placeholder="22:00:00"
-                      hide-details
-                      clearable
-                    />
-                  </td>
-                </tr>
-                <tr v-if="!iptSpecialdayDetail.is_closed">
-                  <th>BreakStart</th>
-                  <td>
-                    <v-text-field
-                      v-model="iptSpecialdayDetail.break_start"
-                      density="compact"
-                      variant="outlined"
-                      placeholder="14:00:00"
-                      hide-details
-                      clearable
-                    />
-                  </td>
-                </tr>
-                <tr v-if="!iptSpecialdayDetail.is_closed">
-                  <th>BreakEne</th>
-                  <td>
-                    <v-text-field
-                      v-model="iptSpecialdayDetail.break_end"
-                      density="compact"
-                      variant="outlined"
-                      placeholder="17:00:00"
-                      hide-details
-                      clearable
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <th>Description</th>
-                  <td>
-                    <v-textarea
-                      v-model="iptSpecialdayDetail.description"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                      clearable
-                      rows="3"
-                    />
-                  </td>
-                </tr>
+              <tr align="right">
+                <th>Close</th>
+                <td>
+                  <v-switch
+                    v-model="iptSpecialdayDetail.is_closed"
+                    hide-details
+                    density="compact"
+                    color="primary"
+                  ></v-switch>
+                </td>
+              </tr>
+              <tr v-if="!iptSpecialdayDetail.is_closed">
+                <th>OpenTime</th>
+                <td>
+                  <v-text-field
+                    v-model="iptSpecialdayDetail.open_time"
+                    density="compact"
+                    variant="outlined"
+                    placeholder="09:00:00"
+                    hide-details
+                    clearable
+                  />
+                </td>
+              </tr>
+              <tr v-if="!iptSpecialdayDetail.is_closed">
+                <th>CloseTime</th>
+                <td>
+                  <v-text-field
+                    v-model="iptSpecialdayDetail.close_time"
+                    density="compact"
+                    variant="outlined"
+                    placeholder="22:00:00"
+                    hide-details
+                    clearable
+                  />
+                </td>
+              </tr>
+              <tr v-if="!iptSpecialdayDetail.is_closed">
+                <th>BreakStart</th>
+                <td>
+                  <v-text-field
+                    v-model="iptSpecialdayDetail.break_start"
+                    density="compact"
+                    variant="outlined"
+                    placeholder="14:00:00"
+                    hide-details
+                    clearable
+                  />
+                </td>
+              </tr>
+              <tr v-if="!iptSpecialdayDetail.is_closed">
+                <th>BreakEne</th>
+                <td>
+                  <v-text-field
+                    v-model="iptSpecialdayDetail.break_end"
+                    density="compact"
+                    variant="outlined"
+                    placeholder="17:00:00"
+                    hide-details
+                    clearable
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Description</th>
+                <td>
+                  <v-textarea
+                    v-model="iptSpecialdayDetail.description"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    clearable
+                    rows="3"
+                  />
+                </td>
+              </tr>
               </tbody>
             </v-table>
             <v-divider class="py-2" />

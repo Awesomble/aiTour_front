@@ -1,37 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
+import { useToast } from 'vue-toastification'
 
+const toast = useToast()
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/',
-      name: 'full-layout',
-      component: () => import('@/layouts/FullLayout.vue'),
-      children: [
-        {
-          path: '/auth',
-          name: 'auth',
-          component: () => import('@/views/auth/Auth.vue'),
-          meta: {}
-        },
-        {
-          path: '/signin',
-          name: 'signin',
-          component: () => import('@/views/auth/Signin.vue'),
-          meta: {}
-        }
-      ]
-    },
-    {
-      path: '/',
       name: 'default-layout',
-      redirect: 'home',
+      redirect: 'main-home',
       component: () => import('@/layouts/DefaultLayout.vue'),
       children: [
         {
-          path: '/home',
-          name: 'home',
-          component: () => import('@/views/home/Home.vue'),
+          path: '/mainHome',
+          name: 'main-home',
+          component: () => import('@/views/home/MainHome.vue'),
           meta: {
             keepAlive: true
           }
@@ -47,17 +31,63 @@ const router = createRouter({
         {
           path: '/myBag',
           name: 'my-bag',
-          component: () => import('@/views/mybag/MyBag.vue'),
+          component: () => import('@/views/my/MyBag.vue'),
+          meta: {
+            requiresAuth: true
+          }
+        },
+        {
+          path: '/myPage',
+          name: 'my-page',
+          component: () => import('@/views/my/MyPage.vue'),
+          meta: {
+            requiresAuth: true,
+            historyBack: true
+          }
+        },
+        {
+          path: '/mainMap',
+          name: 'main-map',
+          component: () => import('@/views/map/MainMap.vue'),
           meta: {
             keepAlive: true
           }
         },
         {
-          path: '/map',
-          name: 'map',
-          component: () => import('@/views/map/Map.vue'),
+          path: '/notifications',
+          name: 'notifications',
+          component: () => import('@/views/my/Notifications.vue'),
           meta: {
-            keepAlive: true
+            keepAlive: true,
+            historyBack: true
+          }
+        }
+      ]
+    },
+    {
+      path: '/',
+      name: 'full-layout',
+      component: () => import('@/layouts/FullLayout.vue'),
+      children: [
+        {
+          path: '/auth',
+          name: 'auth',
+          component: () => import('@/views/auth/Auth.vue'),
+          meta: {}
+        },
+        {
+          path: '/authComplate',
+          name: 'auth-complate',
+          component: () => import('@/views/auth/authComplete.vue'),
+          meta: {
+            requiresAuth: true
+          }
+        },
+        {
+          path: '/signin',
+          name: 'signin',
+          component: () => import('@/views/auth/Signin.vue'),
+          meta: {
           }
         }
       ]
@@ -72,7 +102,9 @@ const router = createRouter({
           name: 'admin-dashboard',
           component: () => import('@/views/admin/Dashboard.vue'),
           meta: {
-            title: 'Dashboard'
+            title: 'Dashboard',
+            requiresAuth: true,
+            roles: 'admin'
           }
         },
         {
@@ -80,7 +112,9 @@ const router = createRouter({
           name: 'admin-place',
           component: () => import('@/views/admin/Place.vue'),
           meta: {
-            title: 'Place Manager'
+            title: 'Place Manager',
+            requiresAuth: true,
+            roles: 'admin'
           }
         },
         {
@@ -88,7 +122,9 @@ const router = createRouter({
           name: 'admin-place-detail',
           component: () => import('@/views/admin/PlaceDetail.vue'),
           meta: {
-            title: 'Place Detail Manager'
+            title: 'Place Detail Manager',
+            requiresAuth: true,
+            roles: 'admin'
           }
         },
         {
@@ -96,7 +132,19 @@ const router = createRouter({
           name: 'admin-categories',
           component: () => import('@/views/admin/Category.vue'),
           meta: {
-            title: 'Category Manager'
+            title: 'Category Manager',
+            requiresAuth: true,
+            roles: 'admin'
+          }
+        },
+        {
+          path: 'categories/:id',
+          name: 'admin-categories-detail',
+          component: () => import('@/views/admin/CategoryDetail.vue'),
+          meta: {
+            title: 'Category Detail Manager',
+            requiresAuth: true,
+            roles: 'admin'
           }
         },
         {
@@ -104,7 +152,9 @@ const router = createRouter({
           name: 'admin-hashtags',
           component: () => import('@/views/admin/Hashtag.vue'),
           meta: {
-            title: 'Hashtag Manager'
+            title: 'Hashtag Manager',
+            requiresAuth: true,
+            roles: 'admin'
           }
         }
       ]
@@ -124,4 +174,37 @@ const router = createRouter({
   }
 })
 
+router.beforeEach(async (to, from, next) => {
+  if (to.meta.requiresAuth) {
+    try {
+      const user = await getCurrentUser()
+      if (!user) {
+        toast.error('로그인이 필요합니다.')
+        return next({
+          path: '/signin',
+          query: { redirect: to.fullPath }
+        }) // 로그인 페이지나 로그인 로직 호출
+      }
+      // 2) 토큰 추출
+      // const { tokens } = await fetchAuthSession()
+      // const token = tokens?.accessToken?.jwtToken
+    } catch {
+      toast.error('로그인이 필요합니다.')
+      return next({
+        path: '/signin',
+        query: { redirect: to.fullPath }
+      })
+    }
+  }
+  if (to.meta.roles && to.meta.roles === 'admin') {
+    const authSession = await fetchAuthSession()
+    const idTokenPayload = authSession.tokens?.idToken?.payload
+    const groups = idTokenPayload?.['cognito:groups'] as string[]
+    if (!groups?.includes('admin')) {
+      toast.error('관리자 권한이 필요합니다.')
+      return next({name: 'main-home'})
+    }
+  }
+  next()
+})
 export default router

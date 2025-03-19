@@ -3,6 +3,10 @@ import { onActivated, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue
 import MyPlanDialog from '@/components/dialogs/MyPlan.vue'
 import dayjs from 'dayjs'
 
+defineOptions({
+  name: 'tour-planner'
+})
+
 const API_BASE_URL = import.meta.env?.VITE_APP_URL
 const planContainer = ref<HTMLDivElement | null>(null)
 const threadId = ref<string | null>(null)

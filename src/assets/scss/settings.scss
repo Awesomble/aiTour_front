@@ -23,3 +23,87 @@
     display: none;
   }
 }
+
+/* Complete override for Vue-Toastification animations */
+
+/* Completely disable the original animations */
+.Vue-Toastification__bounce-enter-active,
+.Vue-Toastification__bounce-leave-active,
+.Vue-Toastification__bounce-enter-from,
+.Vue-Toastification__bounce-leave-to,
+.Vue-Toastification__bounce-enter-to,
+.Vue-Toastification__bounce-leave-from {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Basic toast styling */
+.toast-container-compact {
+  max-width: 360px !important;
+  width: calc(100% - 32px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: 70px !important;
+  padding: 0 16px !important;
+}
+
+.toast-compact {
+  min-height: auto !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1) !important;
+  font-size: 14px !important;
+  width: 100% !important;
+  margin: 0 auto 8px auto !important;
+}
+
+/* Custom manually controlled animations */
+.Vue-Toastification__toast {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+/* Define our own simple fade animation */
+@keyframes simple-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes simple-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Apply custom animations manually */
+.Vue-Toastification__toast-enter {
+  animation: simple-fade-in 0.3s ease forwards !important;
+}
+
+.Vue-Toastification__toast-exit {
+  animation: simple-fade-out 0.3s ease forwards !important;
+}
+
+/* Toast colors */
+.toast-compact.Vue-Toastification__toast--success {
+  background-color: rgb(20, 131, 194) !important;
+}
+
+.toast-compact.Vue-Toastification__toast--error {
+  background-color: #f44336 !important;
+}
+
+.toast-compact.Vue-Toastification__toast--warning {
+  background-color: #ff9800 !important;
+}
+
+.toast-compact.Vue-Toastification__toast--info {
+  background-color: #2196f3 !important;
+}
+
+/* Ensure high z-index */
+.Vue-Toastification__container {
+  z-index: 9999 !important;
+}

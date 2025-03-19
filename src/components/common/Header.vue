@@ -1,110 +1,103 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { Menu, Bell, Search, ArrowLeft } from 'lucide-vue-next'
 import { useGlobalStore } from '@/store'
-import { useRouter } from 'vue-router'
 
-const golbalStore = useGlobalStore()
+const route = useRoute()
 const router = useRouter()
-const user = ref<object>(
-  {
-    initials: 'JD',
-    fullName: 'John Doe',
-    email: 'john.doe@doe.com',
-  }
-)
+const globalStore = useGlobalStore()
+const hasNotifications = ref(true)
+
+const toggleNavigation = () => {
+  globalStore.isNavigation = !globalStore.isNavigation
+}
 </script>
 
 <template>
-  <v-app-bar color="white"
-             :elevation="0"
-             density="compact"
-             style="border-bottom: 1px solid #eee;"
-             class="pl-4"
-  >
-    <!-- 왼쪽 콘텐츠 추가 -->
-    <div class="d-flex align-center font-weight-black">
-      <h1 color="primary" class="text-button" style="font-size: 18px!important;">TRIPIECE</h1>
-    </div>
-    <v-spacer />
-    <v-menu
-      min-width="200px"
-      rounded
-    >
-      <template v-slot:activator="{ props }">
-        <v-btn
-          icon
-          v-bind="props"
-        >
-          <v-avatar
-            size="small"
-            color="primary"
-          >
-            <span class="text-h6">{{ user.initials }}</span>
-          </v-avatar>
-        </v-btn>
-      </template>
-      <v-card color="white">
-        <v-card-text>
-          <div class="mx-auto text-center">
-            <v-avatar
-              color="brown"
-            >
-              <span class="text-h5">{{ user.initials }}</span>
-            </v-avatar>
-            <h3>{{ user.fullName }}</h3>
-            <p class="text-caption mt-1" @click="router.push({name: 'auth'})">
-              {{ user.email }}
-            </p>
-            <v-divider class="my-3"></v-divider>
-            <v-btn
-              variant="text"
-              rounded
-              :to="{name: 'admin-dashboard'}"
-            >
-              Edit Account
-            </v-btn>
-            <v-divider class="my-3"></v-divider>
-            <v-btn
-              variant="text"
-              rounded
-            >
-              Disconnect
-            </v-btn>
+  <v-app-bar flat density="compact" class="custom-header px-4">
+    <div class="d-flex align-center justify-space-between w-100">
+      <button v-if="route.meta.historyBack" class="back-btn" @click="router.go(-1)">
+        <ArrowLeft :size="24" :stroke-width="1.5" />
+      </button>
+
+      <v-spacer />
+
+      <!-- Action Icons -->
+      <div class="action-icons">
+        <button class="icon-btn notification-btn" @click="router.push('/notifications')">
+          <div class="icon-wrapper">
+            <Bell :size="22" :stroke-width="1.5" class="icon-with-shadow" />
+            <span v-if="hasNotifications" class="notification-indicator"></span>
           </div>
-        </v-card-text>
-      </v-card>
-    </v-menu>
-<!--    {{ golbalStore.lat }}-->
-<!--    {{ golbalStore.long }}-->
-<!--    <template v-slot:prepend>-->
-<!--      <v-app-bar-nav-icon @click="golbalStore.setNavi(!golbalStore.isNavigation)"></v-app-bar-nav-icon>-->
-<!--    </template>-->
+        </button>
 
-<!--    <v-app-bar-title>AITour</v-app-bar-title>-->
-
-<!--    <v-spacer></v-spacer>-->
-
-<!--    <v-btn icon>-->
-<!--      <v-icon>mdi-magnify</v-icon>-->
-<!--    </v-btn>-->
-
-<!--    <v-btn icon>-->
-<!--      <v-icon>mdi-heart</v-icon>-->
-<!--    </v-btn>-->
-
-<!--    <v-btn icon>-->
-<!--      <v-icon>mdi-dots-vertical</v-icon>-->
-<!--    </v-btn>-->
+        <button class="icon-btn" @click="toggleNavigation">
+          <div class="icon-wrapper">
+            <Menu :size="24" :stroke-width="1.5" class="icon-with-shadow" />
+          </div>
+        </button>
+      </div>
+    </div>
   </v-app-bar>
 </template>
 
-<style scoped lang='scss'>
-.text-gray-500 {
-  color: #9e9e9e; /* 회색 텍스트 색상 */
+<style scoped>
+.custom-header {
+  background-color: transparent;
 }
-.blur {
-  backdrop-filter: blur(25px) !important;
-  background: #f5f6f79f !important;
-  border-bottom: none;
+
+.action-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon-btn {
+  position: relative;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+.icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  color: rgba(0,0,0,0.8);
+}
+
+.icon-with-shadow {
+  filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.2));
+}
+
+.icon-btn:hover .icon-wrapper {
+  background-color: rgba(0,0,0,0.05);
+  border-radius: 50%;
+}
+
+.notification-indicator {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background-color: #f44336;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px white, 0 1px 2px rgba(0,0,0,0.3);
 }
 </style>

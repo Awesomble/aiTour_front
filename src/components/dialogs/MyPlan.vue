@@ -91,7 +91,7 @@ const initializeMobiscroll = () => {
       showOnClick: false,
       showOnFocus: false,
       maxRange: 7,
-      onChange: function (args) {
+      onChange: function (args: any) {
         iptRange.value = args?.valueText
       }
     })
