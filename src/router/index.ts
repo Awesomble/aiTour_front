@@ -33,7 +33,7 @@ const router = createRouter({
           name: 'my-bag',
           component: () => import('@/views/my/MyBag.vue'),
           meta: {
-            requiresAuth: true
+            // requiresAuth: true
           }
         },
         {
@@ -50,7 +50,6 @@ const router = createRouter({
           name: 'main-map',
           component: () => import('@/views/map/MainMap.vue'),
           meta: {
-            keepAlive: true
           }
         },
         {
@@ -58,7 +57,6 @@ const router = createRouter({
           name: 'notifications',
           component: () => import('@/views/my/Notifications.vue'),
           meta: {
-            keepAlive: true,
             historyBack: true
           }
         }
@@ -80,7 +78,7 @@ const router = createRouter({
           name: 'auth-complate',
           component: () => import('@/views/auth/authComplete.vue'),
           meta: {
-            requiresAuth: true
+            // requiresAuth: true
           }
         },
         {
@@ -190,7 +188,7 @@ router.beforeEach(async (to, from, next) => {
       // const { tokens } = await fetchAuthSession()
       // const token = tokens?.accessToken?.jwtToken
     } catch {
-      toast.error('로그인이 필요합니다.')
+      // toast.error('로그인이 필요합니다.')
       return next({
         path: '/signin',
         query: { redirect: to.fullPath }
