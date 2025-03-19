@@ -1,4 +1,4 @@
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === 'development'
 
 const amplifyConfig = {
   Auth: {
@@ -24,5 +24,4 @@ const amplifyConfig = {
     }
   }
 }
-
-export default amplifyConfig;
+export default amplifyConfig
