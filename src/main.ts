@@ -5,6 +5,12 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import 'vue-toastification/dist/index.css'
 import './assets/scss/main.scss'
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => registration.unregister())
+  })
+}
+
 import { createApp } from 'vue'
 import { vuetify } from './plugins/vuetify'
 import pinia from './store'
