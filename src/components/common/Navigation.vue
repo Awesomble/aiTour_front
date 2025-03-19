@@ -4,6 +4,7 @@ import { useGlobalStore, useUserStore } from '@/store'
 import { getInitials } from '@/plugins/utils'
 import { Home, MapPin, Sparkles, Briefcase, Cog } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
+import { version } from '../../../package.json'
 
 const route = useRoute()
 const golbalStore = useGlobalStore()
@@ -11,6 +12,7 @@ const userStore = useUserStore()
 const locationSharing = ref(true)
 const travelHistorySharing = ref(false)
 const chatAcceptance = ref(true)
+const appVersion = ref(version)
 
 const isActive = (routeName: string) => {
   return computed(() => route.name === routeName)
@@ -107,11 +109,21 @@ onBeforeUnmount(() => {
         <v-switch v-model="chatAcceptance" color="primary" density="compact" hide-details></v-switch>
       </div>
     </div>
+    <!-- 앱 버전 - 하단 고정 -->
+    <div class="app-version-container">
+      <div class="app-version-inner">
+        <v-icon size="12" class="version-icon">mdi-information-outline</v-icon>
+        <span>v{{ appVersion }}</span>
+      </div>
+    </div>
+
   </v-navigation-drawer>
+
 </template>
 
 <style scoped>
 .nav-drawer {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh!important;
@@ -226,5 +238,36 @@ onBeforeUnmount(() => {
 
 .logout-btn {
   margin-top: 16px;
+}
+
+.app-version-container {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 256px; /* 드로어 너비와 동일하게 설정 */
+  background-color: #f5f5f5;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  z-index: 1000;
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+}
+
+.v-navigation-drawer--closed + .app-version-container {
+  transform: translateX(256px);
+}
+
+.app-version-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 0;
+  font-size: 11px;
+  color: rgba(0,0,0,0.6);
+  font-weight: 500;
+}
+
+.version-icon {
+  opacity: 0.7;
 }
 </style>

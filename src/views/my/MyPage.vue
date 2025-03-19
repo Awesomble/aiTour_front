@@ -9,10 +9,12 @@ import dayjs from 'dayjs'
 import countryCallingCodes from '@/assets/json/countries.json'
 import { useToast } from 'vue-toastification'
 import { UserInfo } from '@/types'
+import { version } from '../../../package.json'
 
 const router = useRouter()
 const userStore = useUserStore()
 const toast = useToast()
+const appVersion = ref(version)
 const isLoading = ref<boolean>(false)
 const emergencyContact = ref<HTMLDivElement | null>(null)
 const emergencyContactNationality = ref<HTMLDivElement | null>(null)
@@ -20,9 +22,6 @@ const formRef = ref<HTMLFormElement | null>(null)
 const formValid = ref<boolean>(false)
 const bloodTypes = ['Unknown', 'A', 'A-', 'B', 'B-', 'AB', 'AB-', 'O', 'O-']
 const birthDateInstance = ref<any>(null)
-const snackbar = ref<boolean>(false)
-const snackbarText = ref<string>('')
-const snackbarColor = ref<string>('success')
 const expandedPanel = ref<number>(-1) // -1 means collapsed, 0 means expanded
 
 const getCountryFlagUrl = (countryCode: string) => {
@@ -553,7 +552,7 @@ onBeforeMount(async () => {
       <div class="app-version-section d-flex align-center mt-4 mb-6">
         <div class="app-version-label flex-grow-1">앱 버전 정보</div>
         <div class="d-flex align-center">
-          <span class="version-number mr-2">전체버전 1.1.01</span>
+          <span class="version-number mr-2">전체버전 {{ appVersion }}</span>
           <v-btn
             size="small"
             variant="tonal"
@@ -567,15 +566,6 @@ onBeforeMount(async () => {
         </div>
       </div>
     </div>
-
-    <!-- Feedback snackbar -->
-    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000" location="top">
-      {{ snackbarText }}
-
-      <template v-slot:actions>
-        <v-btn variant="text" icon="mdi-close" @click="snackbar = false"></v-btn>
-      </template>
-    </v-snackbar>
   </v-container>
 </template>
 
