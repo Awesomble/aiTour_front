@@ -177,6 +177,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     try {
       const user = await getCurrentUser()
+      console.log('user: ', user)
       if (!user) {
         toast.error('로그인이 필요합니다.')
         return next({
