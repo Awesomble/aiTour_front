@@ -33,7 +33,7 @@ const router = createRouter({
           name: 'my-bag',
           component: () => import('@/views/my/MyBag.vue'),
           meta: {
-            // requiresAuth: true
+            requiresAuth: true
           }
         },
         {
@@ -67,6 +67,13 @@ const router = createRouter({
           meta: {
             // requiresAuth: true
           }
+        },
+        {
+          path: '/signin',
+          name: 'signin',
+          component: () => import('@/views/auth/Signin.vue'),
+          meta: {
+          }
         }
       ]
     },
@@ -80,13 +87,6 @@ const router = createRouter({
           name: 'auth',
           component: () => import('@/views/auth/Auth.vue'),
           meta: {}
-        },
-        {
-          path: '/signin',
-          name: 'signin',
-          component: () => import('@/views/auth/Signin.vue'),
-          meta: {
-          }
         }
       ]
     },
