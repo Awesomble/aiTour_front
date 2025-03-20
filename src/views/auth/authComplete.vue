@@ -34,18 +34,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Amplify, Auth } from 'aws-amplify'
-import amplifyConfig from '@/config/amplify-config'
-import { useStore } from 'vuex' // Pinia를 사용하는 경우 해당 import로 변경
+import { Amplify } from 'aws-amplify'
+import amplifyConfig from '@/configs/amplify-config'
+import { useUserStore } from '@/store' // 사용자 정보를 관리하는 Pinia 스토어
 
 // 상태 정의
 const loading = ref(true)
 const error = ref(false)
 const errorMessage = ref('')
 
-// 라우터와 스토어 설정
+// 라우터와 Pinia 스토어 설정
 const router = useRouter()
-const store = useStore()
+const userStore = useUserStore()
 
 // 홈으로 이동하는 함수
 const goToHome = () => {
@@ -66,12 +66,9 @@ const handleAuthentication = async () => {
       throw new Error('인증 코드가 없습니다.')
     }
 
-    // 현재 인증된 사용자 정보 가져오기
-    const user = await Auth.currentAuthenticatedUser()
-    console.log('로그인 성공:', user)
-
-    // 사용자 정보 저장 (필요한 경우)
-    store.dispatch('auth/setUser', user)
+    // 사용자 정보 가져오기 - userStore에서 관리하는 메서드 사용
+    await userStore.getUserInfo()
+    console.log('로그인 성공: 사용자 정보가 스토어에 저장되었습니다.')
 
     // 리디렉션 대상 확인 (로컬 스토리지에 저장된 경로)
     const redirectPath = localStorage.getItem('redirectPath') || '/mainHome'
