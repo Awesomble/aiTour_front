@@ -57,23 +57,37 @@ const handleAuthentication = async () => {
       throw new Error('인증 코드가 없습니다.')
     }
 
-    // 최대 30초 타임아웃 설정
-    const userInfoPromise = Promise.race([
-      userStore.getUserInfo(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Authentication timeout')), 30000)
-      )
-    ])
+    console.log('인증 코드 확인:', code)
 
-    await userInfoPromise
-    console.log('로그인 성공: 사용자 정보가 스토어에 저장되었습니다.')
+    // 사용자 정보 가져오기 시도
+    try {
+      await userStore.getUserInfo()
+      console.log('로그인 성공: 사용자 정보가 스토어에 저장되었습니다.')
+    } catch (userInfoError) {
+      console.error('사용자 정보 가져오기 실패:', userInfoError)
+      // 사용자 정보 가져오기에 실패해도 계속 진행
+    }
 
-    // 리디렉션 대상 확인
-    const redirectPath = localStorage.getItem('redirectPath') || '/mainHome'
+    // 리디렉션 대상 확인 (localStorage가 비어있는 경우 대비)
+    let redirectPath = localStorage.getItem('redirectPath')
+    console.log('저장된 리디렉션 경로:', redirectPath)
+
+    // 리디렉션 경로가 없거나 유효하지 않은 경우 기본값 설정
+    if (!redirectPath || redirectPath === 'undefined' || redirectPath === 'null') {
+      redirectPath = '/mainHome'
+    }
+
     localStorage.removeItem('redirectPath') // 사용 후 삭제
+    console.log('리디렉션할 경로:', redirectPath)
 
-    // 성공 후 리디렉션
-    await router.push(redirectPath)
+    // 성공 후 리디렉션 (try-catch로 감싸서 리디렉션 오류 처리)
+    try {
+      await router.push(redirectPath)
+    } catch (routerError) {
+      console.error('라우터 리디렉션 오류:', routerError)
+      // 리디렉션 실패 시 기본 경로로 이동
+      await router.push('/mainHome')
+    }
   } catch (err: any) {
     console.error('인증 처리 오류:', err)
     error.value = true
@@ -82,6 +96,20 @@ const handleAuthentication = async () => {
   }
 }
 
+// 타임아웃 설정 (60초 후 강제 리디렉션)
+const setupFallbackTimeout = () => {
+  setTimeout(() => {
+    if (loading.value) {
+      console.warn('인증 타임아웃: 홈으로 리디렉션합니다.')
+      loading.value = false
+      router.push('/mainHome')
+    }
+  }, 2500)
+}
+
 // 컴포넌트 마운트 시 인증 처리 실행
-onMounted(handleAuthentication)
+onMounted(() => {
+  handleAuthentication()
+  setupFallbackTimeout() // 안전장치로 타임아웃 설정
+})
 </script>
