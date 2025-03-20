@@ -4,9 +4,8 @@ import DialogManager from '@/components/dialogs/DialogManager.vue'
 import { useUserStore } from '@/store'
 
 onBeforeMount(async () =>{
-
-  const userStore = useUserStore()
-  await userStore.getUserInfo()
+  // const userStore = useUserStore()
+  // await userStore.getUserInfo()
 })
 </script>
 
