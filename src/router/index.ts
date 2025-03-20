@@ -59,6 +59,14 @@ const router = createRouter({
           meta: {
             historyBack: true
           }
+        },
+        {
+          path: '/authComplate',
+          name: 'auth-complate',
+          component: () => import('@/views/auth/authComplete.vue'),
+          meta: {
+            // requiresAuth: true
+          }
         }
       ]
     },
@@ -72,14 +80,6 @@ const router = createRouter({
           name: 'auth',
           component: () => import('@/views/auth/Auth.vue'),
           meta: {}
-        },
-        {
-          path: '/authComplate',
-          name: 'auth-complate',
-          component: () => import('@/views/auth/authComplete.vue'),
-          meta: {
-            // requiresAuth: true
-          }
         },
         {
           path: '/signin',
