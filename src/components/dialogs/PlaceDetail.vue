@@ -5,6 +5,7 @@ import { useDraggable } from '@vueuse/core'
 import { getPlacesDetailAPI } from '@/network/app'
 import PlaceHeader from '@/components/place/PlaceHeader.vue'
 import PlacePhotos from '@/components/place/PlacePhotos.vue'
+import InfoPanel from '@/components/place/InfoPanel.vue'
 
 const props = defineProps({
   modelValue: {
@@ -48,15 +49,21 @@ const isMaxHeight = computed(() => {
   return heightState.value === 'max'
 })
 
-// Content is scrollable
+// Content is scrollable only when at max height
 const isScrollable = computed(() => {
   return heightState.value === 'max'
 })
 
-// 스크롤 위치 확인
+// Check if content is scrolled to the top
 const isAtTopScroll = () => {
   if (!contentRef.value) return true
   return contentRef.value.scrollTop <= 1
+}
+
+// Check if content has scrollable content
+const hasScrollableContent = () => {
+  if (!contentRef.value) return false
+  return contentRef.value.scrollHeight > contentRef.value.clientHeight
 }
 
 // Setup drag handle
@@ -64,7 +71,7 @@ const handleDrag = useDraggable(dragHandleRef, {
   axis: 'y',
   initialValue: { x: 0, y: 0 },
   preventDefault: true,
-  onStart: () => false // 기본 동작 방지하고 아래 핸들러 사용
+  onStart: () => false // Prevent default behavior and use custom handlers
 })
 
 // Watch for route changes to show/hide dialog
@@ -118,6 +125,39 @@ const getPlaceDetail = async () => {
 const isDragging = ref(false)
 const startY = ref(0)
 const startHeight = ref(0)
+const dragThreshold = 5 // Minimum pixels to move before considering it a drag
+
+// Track if the user intends to scroll content vs drag the panel
+const isScrollingContent = ref(false)
+const touchStartY = ref(0)
+let touchMoveCount = 0
+
+// Handle touch start on content for distinguishing between scrolling and dragging
+const handleContentTouchStart = (e) => {
+  // Reset tracking variables
+  isScrollingContent.value = false
+  touchStartY.value = e.touches[0].clientY
+  touchMoveCount = 0
+
+  // If we're at max height and not at the top of the scroll,
+  // we'll let browser handle the touch for natural scrolling
+  if (isMaxHeight.value && !isAtTopScroll() && hasScrollableContent()) {
+    return
+  }
+
+  // Otherwise, prepare for potential drag
+  startManualDrag(e)
+}
+
+// Handle mouse down on content
+const handleContentMouseDown = (e) => {
+  // If we're at max height and not at the top, treat as content scroll
+  if (isMaxHeight.value && !isAtTopScroll() && hasScrollableContent()) {
+    return
+  }
+
+  startManualDrag(e)
+}
 
 // Handle manual drag start on drag handle
 const handleDragStart = (e) => {
@@ -127,15 +167,7 @@ const handleDragStart = (e) => {
 
 // Start drag handling
 const startManualDrag = (e) => {
-  // 최대 높이에서는 스크롤 상단인 경우에만 드래그 가능
-  const atMaxHeight = heightState.value === 'max'
-  const notAtTopScroll = atMaxHeight && !isAtTopScroll()
-
-  if (notAtTopScroll) {
-    return
-  }
-
-  // 터치 이벤트면 preventDefault 호출하지 않음
+  // Don't preventDefault on touch events to allow scrolling
   if (!e.type.includes('touch')) {
     e.preventDefault()
   }
@@ -163,10 +195,39 @@ const startManualDrag = (e) => {
 const onManualDrag = (e) => {
   if (!isDragging.value) return
 
-  e.preventDefault()
   const clientY = e.type.includes('touch')
     ? (e.touches?.[0]?.clientY || 0)
     : e.clientY
+
+  // For touch events, we need to determine scroll vs drag intent
+  if (e.type.includes('touch')) {
+    touchMoveCount++
+
+    // If we're at max height and content is scrollable
+    if (isMaxHeight.value && hasScrollableContent()) {
+      const deltaY = clientY - touchStartY.value
+
+      // If scrolled down while at top, or clear drag down motion
+      if ((isAtTopScroll() && deltaY > 0) || Math.abs(deltaY) > dragThreshold) {
+        if (touchMoveCount <= 3) { // Only interfere early in the gesture
+          e.preventDefault() // Prevent browser scroll
+        }
+      } else {
+        // User is trying to scroll content
+        isScrollingContent.value = true
+        isDragging.value = false
+        return
+      }
+    }
+  }
+
+  // If user is trying to scroll content, don't handle as a drag
+  if (isScrollingContent.value) return
+
+  // Normal drag handling
+  if (!e.type.includes('touch')) {
+    e.preventDefault()
+  }
 
   const deltaY = clientY - startY.value
   const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, startHeight.value - deltaY))
@@ -178,7 +239,7 @@ const onManualDrag = (e) => {
 }
 
 const endManualDrag = () => {
-  if (!isDragging.value) return
+  if (!isDragging.value && !isScrollingContent.value) return
 
   document.removeEventListener('mousemove', onManualDrag)
   document.removeEventListener('touchmove', onManualDrag)
@@ -189,30 +250,19 @@ const endManualDrag = () => {
     containerRef.value.style.transition = 'height 0.2s ease-out'
   }
 
-  // Snap to closest height
-  if (heightState.value === 'min') {
-    currentHeight.value = MIN_HEIGHT
-  } else if (heightState.value === 'mid') {
-    currentHeight.value = MID_HEIGHT
-  } else {
-    currentHeight.value = MAX_HEIGHT
+  // If it was a real drag (not just a tap or scroll attempt), snap to closest height
+  if (isDragging.value) {
+    if (heightState.value === 'min') {
+      currentHeight.value = MIN_HEIGHT
+    } else if (heightState.value === 'mid') {
+      currentHeight.value = MID_HEIGHT
+    } else {
+      currentHeight.value = MAX_HEIGHT
+    }
   }
 
   isDragging.value = false
-}
-
-// Content click/touch handler with check for max height and scroll position
-const handleContentInteraction = (e) => {
-  const atMaxHeight = heightState.value === 'max'
-  const notAtTopScroll = atMaxHeight && !isAtTopScroll()
-
-  if (notAtTopScroll) {
-    // 스크롤 중간이면 드래그 동작 방지
-    return
-  }
-
-  // 드래그 시작
-  startManualDrag(e)
+  isScrollingContent.value = false
 }
 
 // Close popup dialog
@@ -225,34 +275,16 @@ const closePopup = () => {
   })
 }
 
-// Chat functions
-const sendMessage = () => {
-  if (newMessage.value.trim() === '') return
-
-  const now = new Date()
-  const hours = now.getHours().toString().padStart(2, '0')
-  const minutes = now.getMinutes().toString().padStart(2, '0')
-
-  chatMessages.value.push({
-    id: chatMessages.value.length + 1,
-    user: '나',
-    message: newMessage.value,
-    time: `${hours}:${minutes}`
-  })
-
-  newMessage.value = ''
-
-  // Scroll to bottom of chat after message is sent
-  setTimeout(() => {
-    const chatContainer = document.querySelector('.chat-messages')
-    if (chatContainer) {
-      chatContainer.scrollTop = chatContainer.scrollHeight
-    }
-  }, 100)
-}
-
 onMounted(() => {
   currentHeight.value = MIN_HEIGHT
+})
+
+onBeforeUnmount(() => {
+  // Clean up event listeners
+  document.removeEventListener('mousemove', onManualDrag)
+  document.removeEventListener('touchmove', onManualDrag)
+  document.removeEventListener('mouseup', endManualDrag)
+  document.removeEventListener('touchend', endManualDrag)
 })
 </script>
 
@@ -278,8 +310,8 @@ onMounted(() => {
       <PlaceHeader
         :loading="loading"
         :detail="detail"
-        @mousedown="startManualDrag"
-        @touchstart="startManualDrag"
+        @mousedown="handleContentMouseDown"
+        @touchstart="handleContentTouchStart"
       />
 
       <!-- Content area (scrollable) with photos -->
@@ -290,8 +322,8 @@ onMounted(() => {
           'is-draggable': !isScrollable,
           'allow-scroll': isScrollable
         }"
-        @mousedown="handleContentInteraction"
-        @touchstart="handleContentInteraction"
+        @mousedown="handleContentMouseDown"
+        @touchstart="handleContentTouchStart"
       >
         <!-- Image Gallery - only clickable when at max height -->
         <PlacePhotos
@@ -324,80 +356,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Info sections -->
-        <div class="info-sections">
-          <!-- Business hours info -->
-          <div class="info-section">
-            <div class="info-icon">ⓘ</div>
-            <div class="info-content">
-              <span class="info-text">영업시간이 잘못되었을 수도 있습니다.영업시간이 잘못되었을 수도 있습니다.영업시간이 잘못되었을 수도 있습니다.영업시간이 잘못되었을 수도 있습니다.영업시간이 잘못되었을 수도 있습니다.영업시간이 잘못되었을 수도 있습니다.영업시간이 잘못되었을 수도 있습니다.</span>
-              <span class="info-arrow">▼</span>
-            </div>
-          </div>
-
-          <!-- Address info -->
-          <div class="info-section">
-            <div class="info-icon location">📍</div>
-            <div class="info-content">
-              <span class="info-text">서울특별시 중구 세종대로14길 17-5</span>
-            </div>
-          </div>
-
-          <!-- Operating hours info -->
-          <div class="info-section">
-            <div class="info-icon time">🕒</div>
-            <div class="info-content">
-              <span class="info-text">🕒 영업 중류: 오후 2:00 • 오후 4:00에 영업 재개</span>
-              <span class="info-arrow">▼</span>
-            </div>
-          </div>
-
-          <!-- Price info -->
-          <div class="info-section">
-            <div class="info-icon price">💰</div>
-            <div class="info-content">
-              <span class="info-text">1인당 ₩10,000~20,000</span>
-              <span class="info-arrow">▼</span>
-            </div>
-          </div>
-          <div class="info-section-note">
-            <span class="note-text">66명의 사용자가 제공한 정보</span>
-          </div>
-
-          <!-- Suggestion button -->
-          <div class="suggestion-button">
-            <div class="suggestion-icon">✏️</div>
-            <span class="suggestion-text">수정 제안하기</span>
-          </div>
-
-          <!-- Real-time Chat Panel -->
-          <div class="chat-panel">
-            <div class="chat-header">
-              <div class="chat-icon">💬</div>
-              <h3 class="chat-title">실시간 채팅</h3>
-            </div>
-
-            <div class="chat-messages">
-              <div v-for="msg in chatMessages" :key="msg.id" class="chat-message" :class="{'my-message': msg.user === '나'}">
-                <div class="message-header">
-                  <span class="message-user">{{ msg.user }}</span>
-                  <span class="message-time">{{ msg.time }}</span>
-                </div>
-                <div class="message-content">{{ msg.message }}</div>
-              </div>
-            </div>
-
-            <div class="chat-input">
-              <input
-                v-model="newMessage"
-                type="text"
-                placeholder="메시지를 입력하세요..."
-                @keyup.enter="sendMessage"
-              />
-              <button class="send-button" @click="sendMessage">전송</button>
-            </div>
-          </div>
-        </div>
+        <InfoPanel :loading="loading" :detail="detail" />
       </div>
     </div>
   </div>
@@ -499,6 +458,9 @@ onMounted(() => {
 }
 
 .tab-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   width: 100%;
   overflow-x: auto;
@@ -519,162 +481,5 @@ onMounted(() => {
 .tab.active {
   color: #009688;
   border-bottom: 2px solid #009688;
-}
-
-.info-sections {
-  padding: 8px 0;
-  background-color: white;
-}
-
-.info-section {
-  display: flex;
-  padding: 16px;
-  align-items: center;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.info-icon {
-  width: 24px;
-  height: 24px;
-  margin-right: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-
-.info-content {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.info-text {
-  font-size: 14px;
-  color: #333;
-}
-
-.info-arrow {
-  color: #999;
-  font-size: 12px;
-}
-
-.info-section-note {
-  padding: 8px 16px;
-  font-size: 12px;
-  color: #999;
-}
-
-.suggestion-button {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  color: #009688;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.suggestion-icon {
-  margin-right: 12px;
-}
-
-.suggestion-text {
-  font-size: 14px;
-}
-
-/* Chat Panel Styles */
-.chat-panel {
-  margin-top: 16px;
-  border-top: 1px solid #f0f0f0;
-  padding: 16px;
-}
-
-.chat-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.chat-icon {
-  font-size: 20px;
-  margin-right: 12px;
-}
-
-.chat-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.chat-messages {
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 16px;
-  padding: 0 4px;
-}
-
-.chat-message {
-  margin-bottom: 12px;
-  background-color: #f5f5f5;
-  padding: 10px;
-  border-radius: 8px;
-  max-width: 85%;
-}
-
-.my-message {
-  margin-left: auto;
-  background-color: #e3f2fd;
-}
-
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.message-user {
-  font-weight: 600;
-  font-size: 13px;
-  color: #333;
-}
-
-.message-time {
-  font-size: 11px;
-  color: #999;
-}
-
-.message-content {
-  font-size: 14px;
-  line-height: 1.4;
-  color: #333;
-  word-wrap: break-word;
-}
-
-.chat-input {
-  display: flex;
-  border: 1px solid #e0e0e0;
-  border-radius: 24px;
-  overflow: hidden;
-  background-color: #fff;
-}
-
-.chat-input input {
-  flex: 1;
-  border: none;
-  padding: 12px 16px;
-  outline: none;
-  font-size: 14px;
-}
-
-.send-button {
-  background-color: #009688;
-  color: white;
-  border: none;
-  padding: 0 16px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
 }
 </style>
