@@ -12,6 +12,7 @@ const props = defineProps({
     require: true
   }
 })
+defineEmits(['showchatpop'])
 
 </script>
 
@@ -19,7 +20,9 @@ const props = defineProps({
 
   <div class="info-sections">
     <!-- 실시간 채팅 배너 -->
-    <div class="chat-banner">
+    <div class="chat-banner"
+         @click="$emit('showchatpop')"
+    >
       <div class="chat-banner-icon">
         <MessageSquare size="22" />
       </div>
@@ -123,7 +126,7 @@ const props = defineProps({
 .chat-banner {
   display: flex;
   align-items: center;
-  padding: 18px 20px;
+  padding: 15px 15px 12px;
   background-color: white;
   color: #333;
   border-radius: 8px;
@@ -140,12 +143,13 @@ const props = defineProps({
   height: 40px;
   background: #f5f9ff;
   border-radius: 50%;
-  margin-right: 16px;
+  margin-right: 10px;
   color: #2196f3;
 }
 
 .chat-banner-content {
   flex: 1;
+  margin-right: 10px;
 }
 
 .chat-banner-title {

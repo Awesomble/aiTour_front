@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useDraggable } from '@vueuse/core'
 import { getPlacesDetailAPI } from '@/network/app'
 import PlaceHeader from '@/components/place/PlaceHeader.vue'
 import PlacePhotos from '@/components/place/PlacePhotos.vue'
 import InfoPanel from '@/components/place/InfoPanel.vue'
+import ChatPanel from '@/components/place/ChatPanel.vue'
 
 const props = defineProps({
   modelValue: {
@@ -30,12 +30,8 @@ const MID_HEIGHT = 300
 const MAX_HEIGHT = window.innerHeight - 50
 const currentHeight = ref(MIN_HEIGHT)
 
-// Chat related states
-const chatMessages = ref([
-  { id: 1, user: '방문자', message: '이 가게는 주차장이 있나요?', time: '14:23' },
-  { id: 2, user: '매니저', message: '네, 건물 뒤편에 주차공간이 마련되어 있습니다.', time: '14:25' }
-])
-const newMessage = ref('')
+// Chat popup states
+const showChatPopup = ref(false)
 
 // Computed current height state: 'min', 'mid', 'max'
 const heightState = computed(() => {
@@ -66,14 +62,6 @@ const hasScrollableContent = () => {
   return contentRef.value.scrollHeight > contentRef.value.clientHeight
 }
 
-// Setup drag handle
-const handleDrag = useDraggable(dragHandleRef, {
-  axis: 'y',
-  initialValue: { x: 0, y: 0 },
-  preventDefault: true,
-  onStart: () => false // Prevent default behavior and use custom handlers
-})
-
 // Watch for route changes to show/hide dialog
 watch(
   () => route.query,
@@ -85,6 +73,7 @@ watch(
       currentHeight.value = MIN_HEIGHT
     } else {
       dialog.value = false
+      showChatPopup.value = false
     }
   },
   { immediate: true }
@@ -101,6 +90,13 @@ watch(
 // Emit model update when dialog changes
 watch(dialog, (newVal) => {
   emit('update:modelValue', newVal)
+})
+
+// Watch height state to close chat popup when minimized
+watch(heightState, (newState) => {
+  if (newState === 'min' && showChatPopup.value) {
+    showChatPopup.value = false
+  }
 })
 
 // Get place details from API
@@ -133,14 +129,11 @@ const touchStartY = ref(0)
 let touchMoveCount = 0
 
 // Handle touch start on content for distinguishing between scrolling and dragging
-const handleContentTouchStart = (e) => {
+const handleContentTouchStart = (e: any) => {
   // Reset tracking variables
   isScrollingContent.value = false
   touchStartY.value = e.touches[0].clientY
   touchMoveCount = 0
-
-  // If we're at max height and not at the top of the scroll,
-  // we'll let browser handle the touch for natural scrolling
   if (isMaxHeight.value && !isAtTopScroll() && hasScrollableContent()) {
     return
   }
@@ -150,7 +143,7 @@ const handleContentTouchStart = (e) => {
 }
 
 // Handle mouse down on content
-const handleContentMouseDown = (e) => {
+const handleContentMouseDown = (e: any) => {
   // If we're at max height and not at the top, treat as content scroll
   if (isMaxHeight.value && !isAtTopScroll() && hasScrollableContent()) {
     return
@@ -160,13 +153,13 @@ const handleContentMouseDown = (e) => {
 }
 
 // Handle manual drag start on drag handle
-const handleDragStart = (e) => {
+const handleDragStart = (e: any) => {
   e.stopPropagation()
   startManualDrag(e)
 }
 
 // Start drag handling
-const startManualDrag = (e) => {
+const startManualDrag = (e: any) => {
   // Don't preventDefault on touch events to allow scrolling
   if (!e.type.includes('touch')) {
     e.preventDefault()
@@ -192,7 +185,7 @@ const startManualDrag = (e) => {
   document.addEventListener('touchend', endManualDrag)
 }
 
-const onManualDrag = (e) => {
+const onManualDrag = (e: any) => {
   if (!isDragging.value) return
 
   const clientY = e.type.includes('touch')
@@ -263,6 +256,29 @@ const endManualDrag = () => {
 
   isDragging.value = false
   isScrollingContent.value = false
+}
+
+// Toggle chat popup
+const toggleChatPopup = () => {
+  showChatPopup.value = !showChatPopup.value
+  if (showChatPopup.value && heightState.value === 'min') {
+    // If opening chat when parent is minimized, expand parent to at least mid height
+    currentHeight.value = MID_HEIGHT
+  }
+}
+
+// Handle chat height changes (rule #3)
+const handleChatHeightChange = (chatHeight: number) => {
+  // Only react when chat is expanding (rule #3)
+  // Calculate the minimum parent height needed based on chat height
+  // Adding extra space for parent popup header and other elements
+  const requiredParentHeight = chatHeight + 120
+
+  // If chat is trying to grow larger than parent allows, expand parent
+  if (requiredParentHeight > currentHeight.value) {
+    // Don't exceed maximum height
+    currentHeight.value = Math.min(MAX_HEIGHT, requiredParentHeight)
+  }
 }
 
 // Close popup dialog
@@ -356,7 +372,21 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <InfoPanel :loading="loading" :detail="detail" />
+        <InfoPanel
+          :loading="loading"
+          :detail="detail"
+          @showchatpop="toggleChatPopup"
+        />
+
+        <ChatPanel
+          :loading="loading"
+          :detail="detail"
+          :showChatPopup="showChatPopup"
+          :parentHeightState="heightState"
+          :parentHeight="currentHeight"
+          @update:showChatPopup="showChatPopup = $event"
+          @chat-height-change="handleChatHeightChange"
+        />
       </div>
     </div>
   </div>
@@ -390,6 +420,7 @@ onBeforeUnmount(() => {
   animation: slideUp 0.3s forwards;
   pointer-events: auto;
   border-top: 1px solid #eee;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes slideUp {
