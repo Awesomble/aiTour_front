@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { nextTick, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MainMap from '@/components/maps/MainMap.vue'
 import { Toilet, Camera } from 'lucide-vue-next'
 
@@ -8,6 +8,7 @@ defineOptions({
   name: 'main-map'
 })
 
+const route = useRoute()
 const router = useRouter()
 const mapComponent = ref(null)
 const mountIdx = ref(1)
@@ -19,8 +20,20 @@ const categories = [
 ]
 
 // Handle marker click
-const handleMarkerClick = (placeId: any) => {
-  router.push({ query: { place: placeId } })
+const handleMarkerClick = async (placeId: any) => {
+  // 현재 쿼리 파라미터에서 place만 제외한 다른 파라미터 유지
+  const { place: _, ...restQuery } = route.query
+
+  if (route.query.place) {
+    // 먼저 place를 제거한 URL로 히스토리 상태 대체 (히스토리 추가 없음)
+    await router.replace({ query: restQuery })
+
+    // 그 다음 새로운 place로 이동 (히스토리에 추가)
+    await router.push({ query: { ...restQuery, place: placeId } })
+  } else {
+    // place가 없는 경우 바로 이동
+    await router.push({ query: { ...restQuery, place: placeId } })
+  }
 }
 
 // Set active category

@@ -614,7 +614,7 @@ defineExpose({
 // Landmark marker styling
 .landmark-marker {
   width: 80px;
-  height: 80px;
+  height: 100px;
   border-radius: 6px;
   overflow: hidden;
   transition: all 0.2s ease;
