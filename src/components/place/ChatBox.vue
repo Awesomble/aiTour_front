@@ -53,15 +53,7 @@ const {
   open: wsOpen,
   close: wsClose
 } = useWebSocket(wsUrl, {
-  autoReconnect: {
-    retries: 5,
-    delay: 2000,
-    onFailed() {
-      console.error('WebSocket 재연결 실패, 수동 재연결 필요')
-      connectionError.value = '채팅 서버 연결에 실패했습니다. 페이지를 새로고침 해보세요.'
-      emit('connection-error', '연결 실패')
-    }
-  },
+  autoReconnect: false, // 자동 재연결 비활성화
   immediate: true,
   onConnected: () => {
     console.log('WebSocket 연결됨')
@@ -71,35 +63,14 @@ const {
   onDisconnected: (e) => {
     console.log('WebSocket 연결 종료:', e)
     chatInputEnabled.value = false
+    connectionError.value = '채팅 서버에 연결할 수 없습니다. 다시 시도해 주세요.'
+    emit('connection-error', '연결 종료')
   },
   onError: (ws, event) => {
     console.error('WebSocket 오류 발생:', event)
     connectionError.value = '연결 오류가 발생했습니다'
     emit('connection-error', event)
-  },
-  onMessage: (ws, event) => {
-    try {
-      const data = JSON.parse(event.data)
-      if (data.type === 'heartbeat') {
-        console.log('서버 하트비트 수신, 응답 전송')
-        wsSend(JSON.stringify({ type: 'heartbeat_response' }))
-      } else if (data.type === 'connection_status') {
-        console.log('Connection status:', data)
-      } else if (data.type === 'auth_status') {
-        console.log('Auth status:', data)
-        if (data.status === 'error') {
-          connectionError.value = data.message || '인증 오류'
-          emit('connection-error', '인증실패')
-        }
-      } else if (data.message_type === 'system') {
-        emit('update-participant-count', data.content)
-      } else {
-        chatMessages.value.push(data)
-        scrollToBottom()
-      }
-    } catch (e) {
-      console.error('메시지 처리 오류:', e)
-    }
+    chatInputEnabled.value = false // 입력 비활성화
   }
 })
 
@@ -222,8 +193,26 @@ const handleTouchMove = (e: TouchEvent) => {
     e.stopPropagation()
   }
 }
+// 키보드 표시 감지 및 대응 로직 추가
+const isKeyboardVisible = ref(false)
+
+// 키보드 감지 함수
+const detectKeyboard = () => {
+  const viewportHeight = window.visualViewport?.height || window.innerHeight
+  const windowHeight = window.innerHeight
+
+  // 뷰포트와 윈도우 높이 차이가 크면 키보드가 표시된 것으로 판단
+  isKeyboardVisible.value = (windowHeight - viewportHeight) > 150
+
+  if (isKeyboardVisible.value) {
+    scrollToBottom()
+  }
+}
 
 onMounted(() => {
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', detectKeyboard)
+  }
   if (chatMessagesRef.value) {
     chatMessagesRef.value.addEventListener('wheel', handleWheel, { passive: false })
     chatMessagesRef.value.addEventListener('touchstart', handleTouchStart, { passive: false })
@@ -231,6 +220,9 @@ onMounted(() => {
   }
 })
 onBeforeUnmount(() => {
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', detectKeyboard)
+  }
   if (chatMessagesRef.value) {
     chatMessagesRef.value.removeEventListener('wheel', handleWheel)
     chatMessagesRef.value.removeEventListener('touchstart', handleTouchStart)
@@ -353,6 +345,7 @@ watch(placeId, (newPlaceId, oldPlaceId) => {
 </template>
 
 <style scoped>
+/* 채팅 컴포넌트 CSS 수정 */
 .chat-component {
   display: flex;
   flex-direction: column;
@@ -360,6 +353,8 @@ watch(placeId, (newPlaceId, oldPlaceId) => {
   overflow: hidden;
   height: 100%;
   border-radius: 0;
+  /* 모바일 최적화 */
+  position: relative;
 }
 
 .chat-messages {
@@ -371,6 +366,18 @@ watch(placeId, (newPlaceId, oldPlaceId) => {
   gap: 10px;
   background-color: #f9f9f9;
   touch-action: pan-y;
+  /* 모바일 최적화 */
+  -webkit-overflow-scrolling: touch;
+}
+
+.chat-input-area {
+  padding: 8px 12px;
+  border-top: 1px solid #eee;
+  background-color: white;
+  /* 모바일 최적화 */
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
 }
 
 .loading-spinner {

@@ -50,20 +50,20 @@ const maxOffset = 100
 const tiltFactor = 0.15
 const dragFactor = 0.2
 
-// 줌 레벨별 속성 계산
+// 줌 레벨별 속성 계산 - 성능 최적화를 위해 원 갯수 감소
 const levels = {
   1: {
     // 가장 넓은 영역, 적은 원
-    circleCount: 4,
+    circleCount: 2, // 4에서 2로 감소
     circleSpacing: 130,
-    radarScale: 1.0, // 스케일이 더이상 변경되지 않음
+    radarScale: 1.0,
     spotRadiusMultiplier: 1.8,
     opacityBase: 0.7,
     opacityDecrement: 0.15,
-    circleWidth: 1 // 원의 테두리 두께
+    circleWidth: 1
   },
   2: {
-    circleCount: 6,
+    circleCount: 3, // 6에서 3으로 감소
     circleSpacing: 110,
     radarScale: 1.0,
     spotRadiusMultiplier: 1.4,
@@ -72,7 +72,7 @@ const levels = {
     circleWidth: 1.5
   },
   3: {
-    circleCount: 8,
+    circleCount: 4, // 8에서 4로 감소
     circleSpacing: 90,
     radarScale: 1.0,
     spotRadiusMultiplier: 1.1,
@@ -81,7 +81,7 @@ const levels = {
     circleWidth: 2
   },
   4: {
-    circleCount: 10,
+    circleCount: 5, // 10에서 5로 감소
     circleSpacing: 70,
     radarScale: 1.0,
     spotRadiusMultiplier: 0.8,
@@ -91,7 +91,7 @@ const levels = {
   },
   5: {
     // 가장 좁은 영역, 많은 원
-    circleCount: 12,
+    circleCount: 6, // 12에서 6으로 감소
     circleSpacing: 50,
     radarScale: 1.0,
     spotRadiusMultiplier: 0.6,
@@ -200,6 +200,7 @@ const setZoomCooldown = () => {
     isZoomCooldown.value = false
   }, 1000) // 1 second cooldown
 }
+
 // 드래그 시작 이벤트 핸들러
 const handleMouseDown = (e: MouseEvent) => {
   isDragging.value = true
@@ -354,8 +355,6 @@ const handleTouchStart = (e: TouchEvent) => {
     const dy = e.touches[0].clientY - e.touches[1].clientY
     pinchStartDistance.value = Math.sqrt(dx * dx + dy * dy)
     lastPinchDistance.value = pinchStartDistance.value
-
-    console.log('핀치 시작:', pinchStartDistance.value)
   }
 }
 
@@ -383,37 +382,22 @@ const handleTouchMove = (e: TouchEvent) => {
 
     // 핀치 거리 변화 확인
     const pinchChange = currentDistance - lastPinchDistance.value
-    console.log(
-      `[PINCH DEBUG] currentDistance: ${currentDistance}, lastPinchDistance: ${lastPinchDistance.value}, pinchChange: ${pinchChange}, threshold: ${pinchThreshold}, current zoomLevel: ${zoomLevel.value}`
-    )
 
     // 핀치 거리에 따라 줌 레벨 조정 (쿨다운 확인)
     if (Math.abs(pinchChange) > pinchThreshold && !isZoomCooldown.value) {
       if (pinchChange > 0) {
         // 핀치 아웃 - 줌 아웃 (레벨 감소 = 영역 확대)
-        console.log(
-          `[PINCH ACTION] Pinch out detected. Current zoomLevel before: ${zoomLevel.value}`
-        )
         if (zoomLevel.value > 1) {
           zoomLevel.value--
           setZoomCooldown() // 쿨다운 적용
           animationKey.value++ // 애니메이션 초기화
-          console.log(`[PINCH ACTION] Zoom out executed. New zoomLevel: ${zoomLevel.value}`)
-        } else {
-          console.log('[PINCH ACTION] Zoom level already at minimum.')
         }
       } else if (pinchChange < 0) {
         // 핀치 인 - 줌 인 (레벨 증가 = 영역 축소)
-        console.log(
-          `[PINCH ACTION] Pinch in detected. Current zoomLevel before: ${zoomLevel.value}`
-        )
         if (zoomLevel.value < 5) {
           zoomLevel.value++
           setZoomCooldown() // 쿨다운 적용
           animationKey.value++ // 애니메이션 초기화
-          console.log(`[PINCH ACTION] Zoom in executed. New zoomLevel: ${zoomLevel.value}`)
-        } else {
-          console.log('[PINCH ACTION] Zoom level already at maximum.')
         }
       }
       // 다음 비교를 위해 현재 거리 저장
@@ -456,7 +440,6 @@ const handleTouchEnd = (e: TouchEvent) => {
   if (isPinching.value) {
     if (e.touches.length < 2) {
       isPinching.value = false
-      console.log('핀치 종료')
     }
   }
 
@@ -481,7 +464,6 @@ const getRadius = async () => {
   try {
     const res = await getRadiusAPI(globalStore.lat, globalStore.long, radius, 1, 10, [])
     if (res && res.data) {
-      console.log('getRadius: res.data type:', typeof res.data, res.data)
       let newSpots
       if (Array.isArray(res.data)) {
         newSpots = res.data
@@ -503,13 +485,13 @@ onMounted(() => {
   if (radarContainer.value) {
     radarContainer.value.addEventListener('mousedown', handleMouseDown)
     radarContainer.value.addEventListener('touchstart', handleTouchStart, { passive: false })
-    radarContainer.value.addEventListener('wheel', handleMouseWheel, { passive: false }) // 마우스 휠 이벤트 추가
+    radarContainer.value.addEventListener('wheel', handleMouseWheel, { passive: false })
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('touchmove', handleTouchMove, { passive: false })
     window.addEventListener('mouseup', handleMouseUp)
     window.addEventListener('touchend', handleTouchEnd)
     radarContainer.value.addEventListener('mouseleave', handleMouseLeave)
-    window.addEventListener('keydown', handleKeyDown) // 키보드 이벤트 추가
+    window.addEventListener('keydown', handleKeyDown)
   }
 })
 
@@ -523,13 +505,13 @@ onBeforeUnmount(() => {
   if (radarContainer.value) {
     radarContainer.value.removeEventListener('mousedown', handleMouseDown)
     radarContainer.value.removeEventListener('touchstart', handleTouchStart)
-    radarContainer.value.removeEventListener('wheel', handleMouseWheel) // 마우스 휠 이벤트 제거
+    radarContainer.value.removeEventListener('wheel', handleMouseWheel)
     window.removeEventListener('mousemove', handleMouseMove)
     window.removeEventListener('touchmove', handleTouchMove)
     window.removeEventListener('mouseup', handleMouseUp)
     window.removeEventListener('touchend', handleTouchEnd)
     radarContainer.value.removeEventListener('mouseleave', handleMouseLeave)
-    window.removeEventListener('keydown', handleKeyDown) // 키보드 이벤트 제거
+    window.removeEventListener('keydown', handleKeyDown)
   }
 })
 </script>
@@ -545,7 +527,7 @@ onBeforeUnmount(() => {
 
     <div class="radar-container" ref="radarContainer" :style="{ perspective: '1000px' }">
       <div class="radar-inner-container" :style="radarStyle()">
-        <!-- 퍼지는 원 애니메이션 - 줌 레벨에 따라 동적 조정 -->
+        <!-- 퍼지는 원 애니메이션 - 최적화: 더 적은 원 사용 -->
         <div
           v-for="index in zoomLevelProperties.circleCount"
           :key="`circle-${index}-${animationKey}`"
@@ -559,7 +541,7 @@ onBeforeUnmount(() => {
           }"
         ></div>
 
-        <!-- 디자인 강화용 추가 레이더 효과 -->
+        <!-- 디자인 강화용 레이더 효과 - 성능 최적화를 위해 단순화 -->
         <div class="radar-scan"></div>
 
         <!-- 레이더 센터 포인트 -->
@@ -575,8 +557,8 @@ onBeforeUnmount(() => {
               cover
             />
             <span v-else class="text-h4">{{
-              getInitials(String(userStore.userInfo?.user_name))
-            }}</span>
+                getInitials(String(userStore.userInfo?.user_name))
+              }}</span>
           </v-avatar>
         </div>
       </div>
@@ -629,10 +611,8 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- 줌 레벨 인디케이터 (현대적 디자인) -->
-    <!-- 개선된 줌 레벨 인디케이터 템플릿 부분 -->
+    <!-- 줌 레벨 인디케이터 (단순화) -->
     <div class="zoom-indicator-container mt-4">
-      <!-- 줌 레벨 트랙 및 프로그레스 개선 - 게이지와 닷 정렬 수정 -->
       <div class="zoom-level-track">
         <div
           class="zoom-level-progress"
@@ -650,7 +630,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- 시각적 줌 레벨 인디케이터로 교체 -->
+      <!-- 시각적 줌 레벨 인디케이터 -->
       <div class="zoom-level-visual-indicator">
         <div class="radar-icon-container">
           <div class="zoom-level-name">
@@ -687,14 +667,14 @@ onBeforeUnmount(() => {
   background-color: #f5f7fa;
   background-image: linear-gradient(135deg, #f5f7fa 0%, #eef3f8 100%);
   border-radius: 24px;
-  overflow: visible; /* 스팟이 밖으로 나갈 수 있도록 변경 */
+  overflow: visible;
   max-width: 480px;
   margin: 0 auto;
   height: 100vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  padding-bottom: 120px; /* 더 많은 여백 추가 */
+  padding-bottom: 120px;
 }
 
 .radar-container {
@@ -720,6 +700,7 @@ onBeforeUnmount(() => {
   will-change: transform;
 }
 
+/* 성능 개선: 블러 효과 제거 및 애니메이션 최적화 */
 .radar-circle {
   position: absolute;
   border-radius: 50%;
@@ -727,11 +708,12 @@ onBeforeUnmount(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  animation: pulse 4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: pulse 5s infinite cubic-bezier(0.4, 0, 0.2, 1); /* 애니메이션 시간 증가로 부하 감소 */
   background: none;
-  backdrop-filter: blur(1px);
+  /* backdrop-filter 제거 */
 }
 
+/* 성능 개선: 화면 상단 레이어 단순화 */
 .radar-scan {
   position: absolute;
   top: 50%;
@@ -741,10 +723,10 @@ onBeforeUnmount(() => {
   background: conic-gradient(rgba(120, 180, 255, 0.3), transparent 240deg, transparent);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  animation: rotate 6s linear infinite;
+  animation: rotate 8s linear infinite; /* 애니메이션 시간 증가 */
   opacity: 0.2;
   z-index: 5;
-  backdrop-filter: blur(0.5px);
+  /* backdrop-filter 제거 */
 }
 
 .radar-center-point {
@@ -758,7 +740,7 @@ onBeforeUnmount(() => {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 15px rgba(100, 170, 255, 0.6);
   z-index: 8;
-  animation: pulse-center 1.5s ease-in-out infinite;
+  animation: pulse-center 2s ease-in-out infinite; /* 애니메이션 시간 증가 */
 }
 
 .radar-center-point-outer {
@@ -771,18 +753,16 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   transform: translate(-50%, -50%);
   z-index: 7;
-  animation: pulse-outer 3s ease-in-out infinite;
+  animation: pulse-outer 4s ease-in-out infinite; /* 애니메이션 시간 증가 */
 }
 
-/* 새로운 줌 레벨 인디케이터 스타일 */
-/* 개선된 줌 레벨 인디케이터 스타일 */
+/* 줌 레벨 인디케이터 */
 .zoom-indicator-container {
   width: 100%;
   padding: 0 20px;
   margin-bottom: 15px;
 }
 
-/* 게이지바 및 닷 정렬 수정 */
 .zoom-level-track {
   position: relative;
   height: 4px;
@@ -830,10 +810,9 @@ onBeforeUnmount(() => {
   height: 16px;
   border-radius: 50%;
   background-color: rgba(100, 150, 255, 0.2);
-  animation: pulse-marker 2s infinite;
+  animation: pulse-marker 3s infinite; /* 애니메이션 시간 증가 */
 }
 
-/* 시각적 줌 레벨 인디케이터 스타일 */
 .zoom-level-visual-indicator {
   display: flex;
   justify-content: center;
@@ -857,79 +836,7 @@ onBeforeUnmount(() => {
   transition: all 0.3s ease;
 }
 
-.radar-icon {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  opacity: 0.3;
-  transition: all 0.3s ease;
-}
-
-.radar-icon.active {
-  opacity: 1;
-}
-
-.radar-icon-circle {
-  position: absolute;
-  border-radius: 50%;
-  border: 1.5px solid rgba(100, 150, 255, 0.7);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.radar-icon-wide .radar-icon-circle {
-  border-color: rgba(100, 180, 255, 0.7);
-}
-
-.radar-icon-narrow .radar-icon-circle {
-  border-color: rgba(100, 130, 210, 0.7);
-}
-
-.radar-icon-dot {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  background-color: rgba(100, 150, 255, 0.9);
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 5px rgba(100, 150, 255, 0.5);
-}
-
-/* 넓은 영역 아이콘의 원 크기 */
-.radar-icon-wide .circle-wide-1 {
-  width: 36px;
-  height: 36px;
-}
-
-.radar-icon-wide .circle-wide-2 {
-  width: 26px;
-  height: 26px;
-}
-
-.radar-icon-wide .circle-wide-3 {
-  width: 16px;
-  height: 16px;
-}
-
-/* 좁은 영역 아이콘의 원 크기 */
-.radar-icon-narrow .circle-narrow-1 {
-  width: 16px;
-  height: 16px;
-}
-
-.radar-icon-narrow .circle-narrow-2 {
-  width: 26px;
-  height: 26px;
-}
-
-.radar-icon-narrow .circle-narrow-3 {
-  width: 36px;
-  height: 36px;
-}
-
+/* 성능 개선: 애니메이션 최적화 */
 @keyframes pulse-marker {
   0% {
     transform: scale(0.8);
@@ -1009,7 +916,7 @@ onBeforeUnmount(() => {
   z-index: 20;
   border-radius: 50%;
   box-shadow: 0 0 20px rgba(100, 170, 255, 0.4);
-  animation: float 3s ease-in-out infinite;
+  animation: float 4s ease-in-out infinite; /* 애니메이션 시간 증가 */
 }
 
 .user-thumbnail::after {
@@ -1021,7 +928,7 @@ onBeforeUnmount(() => {
   left: -4px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.6);
-  animation: pulse-user 3s infinite alternate;
+  animation: pulse-user 4s infinite alternate; /* 애니메이션 시간 증가 */
 }
 
 @keyframes pulse-user {
@@ -1069,11 +976,12 @@ onBeforeUnmount(() => {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
 }
 
+/* 성능 개선: 블러 효과 제거 및 애니메이션 최적화 */
 .spot-card {
   overflow: hidden;
   transition: all 0.3s ease;
   border-radius: 12px !important;
-  backdrop-filter: blur(1px);
+  /* backdrop-filter 제거 */
 }
 
 .spot-card:hover {
@@ -1085,15 +993,16 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
+/* 성능 개선: 블러 효과 제거 및 그라데이션 단순화 */
 .spot-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.2) 60%, rgba(0, 0, 0, 0));
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.2) 70%, transparent);
   color: white;
   height: 100%;
-  backdrop-filter: blur(1px);
+  /* backdrop-filter 제거 */
 }
 
 .spot-name {
@@ -1123,7 +1032,7 @@ onBeforeUnmount(() => {
 }
 
 .spot-item {
-  transition: transform 0.1s ease-out;
+  transition: transform 0.15s ease-out; /* 애니메이션 시간 약간 증가 */
   will-change: transform;
 }
 </style>
