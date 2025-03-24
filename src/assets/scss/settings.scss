@@ -9,6 +9,34 @@
 //   $color-pack: false
 // );
 
+:root {
+  --status-bar-height: 0px;  /* 기본값, JavascriptInterface에서 업데이트됨 */
+  --nav-bar-height: 0px;     /* 기본값, JavascriptInterface에서 업데이트됨 */
+}
+
+/* Vuetify 앱바와 바텀 네비게이션 조정 (필요시 추가) */
+.v-app-bar {
+  padding-top: var(--status-bar-height) !important;
+}
+
+.v-bottom-navigation {
+  padding-bottom: var(--nav-bar-height) !important;
+}
+
+/* 전체 화면 콘텐츠를 위한 클래스 */
+.fullscreen-content {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+
+  /* 시스템 UI 영역 패딩 적용 */
+  padding-top: var(--status-bar-height);
+  padding-bottom: var(--nav-bar-height);
+}
+
 
 // mobiscroll
 .mbsc-ios.mbsc-datepicker-inline {

@@ -7,6 +7,7 @@ onBeforeMount(async () =>{
   const userStore = useUserStore()
   await userStore.getUserInfo()
 })
+
 </script>
 
 <template>
