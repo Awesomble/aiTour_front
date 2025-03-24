@@ -54,7 +54,7 @@ const {
   close: wsClose
 } = useWebSocket(wsUrl, {
   autoReconnect: false, // 자동 재연결 비활성화
-  immediate: true,
+  immediate: false,
   onConnected: () => {
     console.log('WebSocket 연결됨')
     chatInputEnabled.value = true
@@ -243,25 +243,49 @@ const initializeConnection = () => {
       emit('connection-error', error)
     })
 }
-
 watch(
-  () => props.showChat,
-  (newVal) => {
-    console.log('showChat changed to:', newVal)
-    if (newVal) {
-      initializeConnection()
-    } else {
+  [() => props.showChat, placeId],
+  ([newShowChat, newPlaceId], [oldShowChat, oldPlaceId]) => {
+    console.log('상태 변경:', { showChat: newShowChat, placeId: newPlaceId })
+
+    // 기존 연결 종료
+    if (isConnected.value) {
+      console.log('기존 WebSocket 연결 종료')
       wsClose()
+    }
+
+    // 새 연결 시작 (조건 만족 시에만)
+    if (newShowChat && newPlaceId) {
+      console.log('새 WebSocket 연결 시작')
+      initializeConnection()
     }
   },
   { immediate: true }
 )
+watch(data, (newData) => {
+  if (newData) {
+    console.log('WebSocket 메시지 수신:', newData)
+    try {
+      const message = JSON.parse(newData)
 
-watch(placeId, (newPlaceId, oldPlaceId) => {
-  console.log('placeId changed from', oldPlaceId, 'to', newPlaceId)
-  if (props.showChat && newPlaceId && newPlaceId !== oldPlaceId) {
-    wsClose()
-    initializeConnection()
+      // 시스템 메시지 처리
+      if (message.message_type === 'system') {
+        emit('update-participant-count', message.content)
+        return
+      }
+
+      // 중복 메시지 필터링
+      const isDuplicate = chatMessages.value.some(
+        msg => msg.message_id === message.message_id
+      )
+
+      if (!isDuplicate && message.message_id && message.content) {
+        chatMessages.value.push(message)
+        scrollToBottom()
+      }
+    } catch (e) {
+      console.error('WebSocket 메시지 파싱 오류:', e)
+    }
   }
 })
 </script>
