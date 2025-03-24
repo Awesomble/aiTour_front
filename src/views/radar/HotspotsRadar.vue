@@ -39,20 +39,10 @@ const isPinching = ref(false)
 const pinchStartDistance = ref(0)
 const lastPinchDistance = ref(0)
 const pinchThreshold = 5 // 더 민감하게 조정
-const pinchSensitivity = 0.3
 
 // 쿨다운 및 애니메이션 관련 변수 추가
 const isZoomCooldown = ref(false)
 const animationKey = ref(0)
-
-// 디버깅 정보 표시 관련 변수
-const showDebug = ref(false) // 디버깅 정보 표시 여부
-const debugInfo = reactive({
-  pinchDistance: 0,
-  pinchChange: 0,
-  touchCount: 0,
-  lastAction: ''
-})
 
 // 드래그 관련 변수
 const maxTilt = 30
@@ -113,13 +103,6 @@ const levels = {
 
 const zoomLevelProperties = computed(() => {
   return levels[zoomLevel.value]
-})
-
-// 현재 유저 정보
-const currentUser = reactive<User>({
-  id: 1,
-  name: '현재 사용자',
-  avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
 })
 
 // 친구 정보
@@ -215,17 +198,8 @@ const setZoomCooldown = () => {
   isZoomCooldown.value = true
   setTimeout(() => {
     isZoomCooldown.value = false
-    debugInfo.lastAction = '쿨다운 종료'
   }, 1000) // 1 second cooldown
 }
-
-// 디버그 정보 토글
-const toggleDebug = () => {
-  showDebug.value = !showDebug.value
-  // 10번 클릭으로 토글하기 위한 용도의 함수이므로 각 클릭마다 로그
-  console.log('디버그 모드:', showDebug.value)
-}
-
 // 드래그 시작 이벤트 핸들러
 const handleMouseDown = (e: MouseEvent) => {
   isDragging.value = true
@@ -312,30 +286,27 @@ const handleMouseLeave = () => {
 
 // 마우스 휠 이벤트 핸들러 추가 (데스크톱 테스트용)
 const handleMouseWheel = (e: WheelEvent) => {
-  e.preventDefault();
+  e.preventDefault()
 
   // 쿨다운 중인 경우 무시
   if (isZoomCooldown.value) {
-    debugInfo.lastAction = '줌 쿨다운 중 (휠 무시됨)';
-    return;
+    return
   }
 
   // 휠 방향에 따라 줌 레벨 조정
   if (e.deltaY > 0) {
     // 휠 다운 - 줌 아웃 (레벨 감소)
     if (zoomLevel.value > 1) {
-      zoomLevel.value--;
-      setZoomCooldown();
-      animationKey.value++;
-      debugInfo.lastAction = `휠 줌 아웃: ${zoomLevel.value}`;
+      zoomLevel.value--
+      setZoomCooldown()
+      animationKey.value++
     }
   } else {
     // 휠 업 - 줌 인 (레벨 증가)
     if (zoomLevel.value < 5) {
-      zoomLevel.value++;
-      setZoomCooldown();
-      animationKey.value++;
-      debugInfo.lastAction = `휠 줌 인: ${zoomLevel.value}`;
+      zoomLevel.value++
+      setZoomCooldown()
+      animationKey.value++
     }
   }
 }
@@ -344,34 +315,29 @@ const handleMouseWheel = (e: WheelEvent) => {
 const handleKeyDown = (e: KeyboardEvent) => {
   // 쿨다운 중인 경우 무시
   if (isZoomCooldown.value) {
-    debugInfo.lastAction = '줌 쿨다운 중 (키 무시됨)';
-    return;
+    return
   }
 
   // +, = 키로 줌 인
   if (e.key === '+' || e.key === '=') {
     if (zoomLevel.value < 5) {
-      zoomLevel.value++;
-      setZoomCooldown();
-      animationKey.value++;
-      debugInfo.lastAction = `키보드 줌 인: ${zoomLevel.value}`;
+      zoomLevel.value++
+      setZoomCooldown()
+      animationKey.value++
     }
   }
   // - 키로 줌 아웃
   else if (e.key === '-' || e.key === '_') {
     if (zoomLevel.value > 1) {
-      zoomLevel.value--;
-      setZoomCooldown();
-      animationKey.value++;
-      debugInfo.lastAction = `키보드 줌 아웃: ${zoomLevel.value}`;
+      zoomLevel.value--
+      setZoomCooldown()
+      animationKey.value++
     }
   }
 }
 
 // 터치 이벤트 핸들러 (핀치 줌 기능 개선)
 const handleTouchStart = (e: TouchEvent) => {
-  debugInfo.touchCount = e.touches.length
-
   if (e.touches.length === 1) {
     // 단일 터치 - 드래그로 처리
     isDragging.value = true
@@ -379,7 +345,6 @@ const handleTouchStart = (e: TouchEvent) => {
     lastMouseX.value = e.touches[0].clientX
     lastMouseY.value = e.touches[0].clientY
     returnToCenter.value = false
-    debugInfo.lastAction = '드래그 시작'
   } else if (e.touches.length === 2) {
     // 핀치 제스처 시작 - 초기 거리 계산
     isDragging.value = false
@@ -389,8 +354,6 @@ const handleTouchStart = (e: TouchEvent) => {
     const dy = e.touches[0].clientY - e.touches[1].clientY
     pinchStartDistance.value = Math.sqrt(dx * dx + dy * dy)
     lastPinchDistance.value = pinchStartDistance.value
-    debugInfo.pinchDistance = pinchStartDistance.value
-    debugInfo.lastAction = '핀치 시작'
 
     console.log('핀치 시작:', pinchStartDistance.value)
   }
@@ -400,7 +363,6 @@ const handleTouchStart = (e: TouchEvent) => {
 const handleTouchMove = (e: TouchEvent) => {
   // 기본 스크롤 동작 방지
   e.preventDefault()
-  debugInfo.touchCount = e.touches.length
 
   if (e.touches.length === 2) {
     // 핀칭 모드
@@ -411,46 +373,47 @@ const handleTouchMove = (e: TouchEvent) => {
     const dx = e.touches[0].clientX - e.touches[1].clientX
     const dy = e.touches[0].clientY - e.touches[1].clientY
     const currentDistance = Math.sqrt(dx * dx + dy * dy)
-    debugInfo.pinchDistance = currentDistance
 
     // 시작 거리가 0이면 초기화
     if (pinchStartDistance.value === 0) {
       pinchStartDistance.value = currentDistance
       lastPinchDistance.value = currentDistance
-      debugInfo.lastAction = '핀치 거리 초기화'
       return
     }
 
     // 핀치 거리 변화 확인
     const pinchChange = currentDistance - lastPinchDistance.value
-    debugInfo.pinchChange = pinchChange
-    console.log(`[PINCH DEBUG] currentDistance: ${currentDistance}, lastPinchDistance: ${lastPinchDistance.value}, pinchChange: ${pinchChange}, threshold: ${pinchThreshold}, current zoomLevel: ${zoomLevel.value}`);
+    console.log(
+      `[PINCH DEBUG] currentDistance: ${currentDistance}, lastPinchDistance: ${lastPinchDistance.value}, pinchChange: ${pinchChange}, threshold: ${pinchThreshold}, current zoomLevel: ${zoomLevel.value}`
+    )
 
     // 핀치 거리에 따라 줌 레벨 조정 (쿨다운 확인)
     if (Math.abs(pinchChange) > pinchThreshold && !isZoomCooldown.value) {
       if (pinchChange > 0) {
         // 핀치 아웃 - 줌 아웃 (레벨 감소 = 영역 확대)
-        console.log(`[PINCH ACTION] Pinch out detected. Current zoomLevel before: ${zoomLevel.value}`);
+        console.log(
+          `[PINCH ACTION] Pinch out detected. Current zoomLevel before: ${zoomLevel.value}`
+        )
         if (zoomLevel.value > 1) {
-          zoomLevel.value--;
-          setZoomCooldown(); // 쿨다운 적용
-          animationKey.value++; // 애니메이션 초기화
-          debugInfo.lastAction = `줌 아웃: ${zoomLevel.value} (쿨다운 적용)`;
-          console.log(`[PINCH ACTION] Zoom out executed. New zoomLevel: ${zoomLevel.value}`);
+          zoomLevel.value--
+          setZoomCooldown() // 쿨다운 적용
+          animationKey.value++ // 애니메이션 초기화
+          console.log(`[PINCH ACTION] Zoom out executed. New zoomLevel: ${zoomLevel.value}`)
         } else {
-          console.log('[PINCH ACTION] Zoom level already at minimum.');
+          console.log('[PINCH ACTION] Zoom level already at minimum.')
         }
       } else if (pinchChange < 0) {
         // 핀치 인 - 줌 인 (레벨 증가 = 영역 축소)
-        console.log(`[PINCH ACTION] Pinch in detected. Current zoomLevel before: ${zoomLevel.value}`);
+        console.log(
+          `[PINCH ACTION] Pinch in detected. Current zoomLevel before: ${zoomLevel.value}`
+        )
         if (zoomLevel.value < 5) {
-          zoomLevel.value++;
-          setZoomCooldown(); // 쿨다운 적용
-          animationKey.value++; // 애니메이션 초기화
-          debugInfo.lastAction = `줌 인: ${zoomLevel.value} (쿨다운 적용)`;
-          console.log(`[PINCH ACTION] Zoom in executed. New zoomLevel: ${zoomLevel.value}`);
+          zoomLevel.value++
+          setZoomCooldown() // 쿨다운 적용
+          animationKey.value++ // 애니메이션 초기화
+          console.log(`[PINCH ACTION] Zoom in executed. New zoomLevel: ${zoomLevel.value}`)
         } else {
-          console.log('[PINCH ACTION] Zoom level already at maximum.');
+          console.log('[PINCH ACTION] Zoom level already at maximum.')
         }
       }
       // 다음 비교를 위해 현재 거리 저장
@@ -465,7 +428,6 @@ const handleTouchMove = (e: TouchEvent) => {
       isDragging.value = true
       lastMouseX.value = e.touches[0].clientX
       lastMouseY.value = e.touches[0].clientY
-      debugInfo.lastAction = '핀치에서 드래그로 전환'
     }
 
     if (isDragging.value) {
@@ -486,18 +448,14 @@ const handleTouchMove = (e: TouchEvent) => {
 
       lastMouseX.value = touch.clientX
       lastMouseY.value = touch.clientY
-      debugInfo.lastAction = '드래그 중'
     }
   }
 }
 
 const handleTouchEnd = (e: TouchEvent) => {
-  debugInfo.touchCount = e.touches.length
-
   if (isPinching.value) {
     if (e.touches.length < 2) {
       isPinching.value = false
-      debugInfo.lastAction = '핀치 종료'
       console.log('핀치 종료')
     }
   }
@@ -507,18 +465,7 @@ const handleTouchEnd = (e: TouchEvent) => {
       isDragging.value = false
       returnToCenter.value = true
       animateReturnToCenter()
-      debugInfo.lastAction = '드래그 종료'
     }
-  }
-}
-
-// 디버깅 모드 진입을 위한 클릭 카운터
-let debugClickCounter = 0
-const handleContainerClick = () => {
-  debugClickCounter++
-  if (debugClickCounter >= 10) {
-    toggleDebug()
-    debugClickCounter = 0
   }
 }
 
@@ -529,62 +476,60 @@ const getRadius = async () => {
     3: 700,
     4: 500,
     5: 300
-  };
-  const radius = zoomToRadius[zoomLevel.value];
+  }
+  const radius = zoomToRadius[zoomLevel.value]
   try {
-    const res = await getRadiusAPI(globalStore.lat, globalStore.long, radius, 1, 10, []);
+    const res = await getRadiusAPI(globalStore.lat, globalStore.long, radius, 1, 10, [])
     if (res && res.data) {
-      console.log('getRadius: res.data type:', typeof res.data, res.data);
-      let newSpots;
+      console.log('getRadius: res.data type:', typeof res.data, res.data)
+      let newSpots
       if (Array.isArray(res.data)) {
-        newSpots = res.data;
+        newSpots = res.data
       } else if (res.data && typeof res.data[Symbol.iterator] === 'function') {
-        newSpots = Array.from(res.data);
+        newSpots = Array.from(res.data)
       } else {
-        newSpots = [res.data];
+        newSpots = [res.data]
       }
-      spots.splice(0, spots.length, ...newSpots);
+      spots.splice(0, spots.length, ...newSpots)
     }
   } catch (error) {
-    console.error('Error fetching radius data:', error);
+    console.error('Error fetching radius data:', error)
   }
-};
+}
 
 // 컴포넌트 마운트 시 이벤트 리스너 등록
 onMounted(() => {
-  getRadius();
+  getRadius()
   if (radarContainer.value) {
-    radarContainer.value.addEventListener('mousedown', handleMouseDown);
-    radarContainer.value.addEventListener('touchstart', handleTouchStart, { passive: false });
-    radarContainer.value.addEventListener('click', handleContainerClick);
-    radarContainer.value.addEventListener('wheel', handleMouseWheel, { passive: false }); // 마우스 휠 이벤트 추가
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('touchend', handleTouchEnd);
-    radarContainer.value.addEventListener('mouseleave', handleMouseLeave);
-    window.addEventListener('keydown', handleKeyDown); // 키보드 이벤트 추가
+    radarContainer.value.addEventListener('mousedown', handleMouseDown)
+    radarContainer.value.addEventListener('touchstart', handleTouchStart, { passive: false })
+    radarContainer.value.addEventListener('wheel', handleMouseWheel, { passive: false }) // 마우스 휠 이벤트 추가
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+    window.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener('touchend', handleTouchEnd)
+    radarContainer.value.addEventListener('mouseleave', handleMouseLeave)
+    window.addEventListener('keydown', handleKeyDown) // 키보드 이벤트 추가
   }
-});
+})
 
 // 줌 레벨 변경 시 반경 API 재호출
 watch(zoomLevel, () => {
-  getRadius();
-});
+  getRadius()
+})
 
 // 컴포넌트 언마운트 시 이벤트 리스너 해제
 onBeforeUnmount(() => {
   if (radarContainer.value) {
-    radarContainer.value.removeEventListener('mousedown', handleMouseDown);
-    radarContainer.value.removeEventListener('touchstart', handleTouchStart);
-    radarContainer.value.removeEventListener('click', handleContainerClick);
-    radarContainer.value.removeEventListener('wheel', handleMouseWheel); // 마우스 휠 이벤트 제거
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('touchmove', handleTouchMove);
-    window.removeEventListener('mouseup', handleMouseUp);
-    window.removeEventListener('touchend', handleTouchEnd);
-    radarContainer.value.removeEventListener('mouseleave', handleMouseLeave);
-    window.removeEventListener('keydown', handleKeyDown); // 키보드 이벤트 제거
+    radarContainer.value.removeEventListener('mousedown', handleMouseDown)
+    radarContainer.value.removeEventListener('touchstart', handleTouchStart)
+    radarContainer.value.removeEventListener('wheel', handleMouseWheel) // 마우스 휠 이벤트 제거
+    window.removeEventListener('mousemove', handleMouseMove)
+    window.removeEventListener('touchmove', handleTouchMove)
+    window.removeEventListener('mouseup', handleMouseUp)
+    window.removeEventListener('touchend', handleTouchEnd)
+    radarContainer.value.removeEventListener('mouseleave', handleMouseLeave)
+    window.removeEventListener('keydown', handleKeyDown) // 키보드 이벤트 제거
   }
 })
 </script>
@@ -593,7 +538,7 @@ onBeforeUnmount(() => {
   <v-container class="discovery-container pa-4">
     <div class="header d-flex justify-space-between align-center mb-4">
       <div class="title">
-        <h2 class="text-h6 font-weight-bold">What's poppin' within 1km</h2>
+        <h2 class="text-h6 font-weight-bold">What's poppin' within {{ zoomLevel }}km</h2>
         <h2 class="text-h6 font-weight-bold">Let's hit the hottest spots near you.</h2>
       </div>
     </div>
@@ -630,8 +575,8 @@ onBeforeUnmount(() => {
               cover
             />
             <span v-else class="text-h4">{{
-                getInitials(String(userStore.userInfo?.user_name))
-              }}</span>
+              getInitials(String(userStore.userInfo?.user_name))
+            }}</span>
           </v-avatar>
         </div>
       </div>
@@ -682,26 +627,17 @@ onBeforeUnmount(() => {
           <div class="speech-pointer"></div>
         </div>
       </div>
-
-      <!-- 디버그 정보 패널 -->
-      <div v-if="showDebug" class="debug-panel">
-        <div class="debug-title">DEBUG INFO</div>
-        <div>줌 레벨: {{ zoomLevel }}</div>
-        <div>핀치 상태: {{ isPinching ? '활성' : '비활성' }}</div>
-        <div>드래그 상태: {{ isDragging ? '활성' : '비활성' }}</div>
-        <div>쿨다운 상태: {{ isZoomCooldown ? '활성' : '비활성' }}</div>
-        <div>터치 개수: {{ debugInfo.touchCount }}</div>
-        <div>핀치 거리: {{ debugInfo.pinchDistance.toFixed(2) }}</div>
-        <div>핀치 변화: {{ debugInfo.pinchChange.toFixed(2) }}</div>
-        <div>마지막 액션: {{ debugInfo.lastAction }}</div>
-        <div class="mt-2 text-caption">데스크톱 테스트: 마우스 휠 또는 +/- 키</div>
-      </div>
     </div>
 
     <!-- 줌 레벨 인디케이터 (현대적 디자인) -->
+    <!-- 개선된 줌 레벨 인디케이터 템플릿 부분 -->
     <div class="zoom-indicator-container mt-4">
+      <!-- 줌 레벨 트랙 및 프로그레스 개선 - 게이지와 닷 정렬 수정 -->
       <div class="zoom-level-track">
-        <div class="zoom-level-progress" :style="{ width: `${(zoomLevel / 5) * 100}%` }"></div>
+        <div
+          class="zoom-level-progress"
+          :style="{ width: `${((zoomLevel - 1) / 4) * 100}%` }"
+        ></div>
         <div
           v-for="level in 5"
           :key="`marker-${level}`"
@@ -713,12 +649,14 @@ onBeforeUnmount(() => {
           <div class="zoom-level-pulse" v-if="level === zoomLevel"></div>
         </div>
       </div>
-      <div class="zoom-level-labels">
-        <div class="zoom-level-label">광역</div>
-        <div class="zoom-level-label current">
-          {{ ['매우 넓음', '넓음', '보통', '좁음', '매우 좁음'][zoomLevel - 1] }}
+
+      <!-- 시각적 줌 레벨 인디케이터로 교체 -->
+      <div class="zoom-level-visual-indicator">
+        <div class="radar-icon-container">
+          <div class="zoom-level-name">
+            {{ ['매우 좁음', '좁음', '보통', '넓음', '매우 넓음'][zoomLevel - 1] }}
+          </div>
         </div>
-        <div class="zoom-level-label">근거리</div>
       </div>
     </div>
 
@@ -837,12 +775,14 @@ onBeforeUnmount(() => {
 }
 
 /* 새로운 줌 레벨 인디케이터 스타일 */
+/* 개선된 줌 레벨 인디케이터 스타일 */
 .zoom-indicator-container {
   width: 100%;
   padding: 0 20px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
+/* 게이지바 및 닷 정렬 수정 */
 .zoom-level-track {
   position: relative;
   height: 4px;
@@ -863,8 +803,8 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
+  width: 12px;
+  height: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -886,48 +826,108 @@ onBeforeUnmount(() => {
 
 .zoom-level-pulse {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background-color: rgba(100, 150, 255, 0.2);
   animation: pulse-marker 2s infinite;
 }
 
-.zoom-level-labels {
+/* 시각적 줌 레벨 인디케이터 스타일 */
+.zoom-level-visual-indicator {
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: rgba(100, 120, 180, 0.7);
-  margin-top: 4px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
 }
 
-.zoom-level-label.current {
+.radar-icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.zoom-level-name {
   color: rgba(80, 120, 200, 1);
   font-weight: bold;
   font-size: 14px;
-  transform: translateY(-2px);
   text-shadow: 0 0 10px rgba(100, 150, 255, 0.3);
+  text-align: center;
+  transition: all 0.3s ease;
 }
 
-/* 디버그 패널 */
-.debug-panel {
+.radar-icon {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  opacity: 0.3;
+  transition: all 0.3s ease;
+}
+
+.radar-icon.active {
+  opacity: 1;
+}
+
+.radar-icon-circle {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 10px;
-  border-radius: 5px;
-  font-size: 12px;
-  z-index: 1000;
-  min-width: 200px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(100, 150, 255, 0.7);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.debug-title {
-  font-weight: bold;
-  margin-bottom: 5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  padding-bottom: 3px;
+.radar-icon-wide .radar-icon-circle {
+  border-color: rgba(100, 180, 255, 0.7);
+}
+
+.radar-icon-narrow .radar-icon-circle {
+  border-color: rgba(100, 130, 210, 0.7);
+}
+
+.radar-icon-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background-color: rgba(100, 150, 255, 0.9);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 5px rgba(100, 150, 255, 0.5);
+}
+
+/* 넓은 영역 아이콘의 원 크기 */
+.radar-icon-wide .circle-wide-1 {
+  width: 36px;
+  height: 36px;
+}
+
+.radar-icon-wide .circle-wide-2 {
+  width: 26px;
+  height: 26px;
+}
+
+.radar-icon-wide .circle-wide-3 {
+  width: 16px;
+  height: 16px;
+}
+
+/* 좁은 영역 아이콘의 원 크기 */
+.radar-icon-narrow .circle-narrow-1 {
+  width: 16px;
+  height: 16px;
+}
+
+.radar-icon-narrow .circle-narrow-2 {
+  width: 26px;
+  height: 26px;
+}
+
+.radar-icon-narrow .circle-narrow-3 {
+  width: 36px;
+  height: 36px;
 }
 
 @keyframes pulse-marker {
