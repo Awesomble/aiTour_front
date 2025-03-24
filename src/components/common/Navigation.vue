@@ -241,15 +241,7 @@ onBeforeUnmount(() => {
 }
 
 .app-version-container {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 256px; /* 드로어 너비와 동일하게 설정 */
-  background-color: #f5f5f5;
-  border-top: 1px solid rgba(0,0,0,0.1);
-  z-index: 1000;
-  transform: translateY(0);
-  transition: transform 0.3s ease;
+  text-align: right;
 }
 
 .v-navigation-drawer--closed + .app-version-container {
@@ -259,7 +251,7 @@ onBeforeUnmount(() => {
 .app-version-inner {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: right;
   gap: 4px;
   padding: 8px 0;
   font-size: 11px;

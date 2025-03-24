@@ -356,14 +356,11 @@ watch(data, (newData) => {
         :autofocus="false"
         :rules="[]"
         :counter="false"
-        :input-attr="{
-      autocomplete: 'off',
-      autocorrect: 'off',
-      autocapitalize: 'off',
-      spellcheck: 'false',
-      inputmode: 'text'
-    }"
-      ></v-text-field>
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        inputmode="text"
+      />
 
       <v-btn
         color="primary"
