@@ -573,7 +573,7 @@ watch(data, (newData) => {
 
   /* 키보드 위치 처리 */
   position: fixed;
-  bottom: 0;
+  bottom: var(--nav-bar-height) !important;
   left: 0;
   right: 0;
   z-index: 1000;
