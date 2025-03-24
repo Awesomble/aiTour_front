@@ -46,7 +46,7 @@ const showInputBox = computed(() => props.heightState !== 'min')
 // WebSocket URL 구성
 const wsUrl = computed(() => {
   const token = userStore.userInfo?.accessToken || ''
-  const url = `wss://localhost:8000/chat/ws/${placeId.value}?token=${token}`
+  const url = `wss://aitour.awesomble.com/chat/ws/${placeId.value}?token=${token}`
   console.log('WebSocket URL:', url)
   return url
 })
