@@ -29,8 +29,9 @@ const props = defineProps({
 })
 
 // 이벤트 정의
-const emit = defineEmits(['system-message', 'update-participant-count'])
+const emit = defineEmits(['system-message', 'update-participant-count', 'connection-error'])
 
+const WS_BASE_URL = import.meta.env?.VITE_WS_URL
 // Chat 관련 상태
 const chatMessages = ref<ChatMessage[]>([])
 const newMessage = ref('')
@@ -39,14 +40,16 @@ const chatInputEnabled = ref(false)
 const currentUser = ref({ sub: '', user_name: '방문자' })
 const chatMessagesRef = ref<HTMLElement | null>(null)
 const participantCount = ref(0)
+const connectionError = ref('')
 
 // 장소 ID 계산
 const placeId = computed(() => props.detail?.place_id || '')
 const showInputBox = computed(() => props.heightState !== 'min')
+
 // WebSocket URL 구성
 const wsUrl = computed(() => {
   const token = userStore.userInfo?.accessToken || ''
-  const url = `wss://aitour.awesomble.com/chat/ws/${placeId.value}?token=${token}`
+  const url = `${WS_BASE_URL}/chat/ws/${placeId.value}?token=${token}`
   console.log('WebSocket URL:', url)
   return url
 })
@@ -54,19 +57,35 @@ const wsUrl = computed(() => {
 // useWebSocket hook
 const {
   status,
+  data,
+  error,
   send: wsSend,
   open: wsOpen,
   close: wsClose
 } = useWebSocket(wsUrl, {
-  autoReconnect: false,
-  immediate: true,
+  autoReconnect: {
+    retries: 3,
+    delay: 1000,
+    onFailed() {
+      console.error('WebSocket 재연결 실패, 수동 재연결 필요')
+      connectionError.value = '채팅 서버 연결에 실패했습니다. 페이지를 새로고침 해보세요.'
+      emit('connection-error', '연결 실패')
+    }
+  },
+  immediate: false,
   onConnected: () => {
     console.log('WebSocket 연결됨')
     chatInputEnabled.value = true
+    connectionError.value = ''
   },
   onDisconnected: (e) => {
     console.log('WebSocket 연결 종료:', e)
     chatInputEnabled.value = false
+  },
+  onError: (ws, event) => {
+    console.error('WebSocket 오류 발생:', event)
+    connectionError.value = '연결 오류가 발생했습니다'
+    emit('connection-error', event)
   },
   onMessage: (ws, event) => {
     try {
@@ -74,24 +93,17 @@ const {
       if (data.type === 'heartbeat') {
         console.log('서버 하트비트 수신, 응답 전송')
         wsSend(JSON.stringify({ type: 'heartbeat_response' }))
-      } else if (data.type === 'connection_status' || data.type === 'auth_status') {
-        // 연결 상태 메시지 처리
+      } else if (data.type === 'connection_status') {
         console.log('Connection status:', data)
+      } else if (data.type === 'auth_status') {
+        console.log('Auth status:', data)
+        if (data.status === 'error') {
+          connectionError.value = data.message || '인증 오류'
+          emit('connection-error', '인증 실패')
+        }
       } else if (data.message_type === 'system') {
         // 시스템 메시지 처리
         emit('update-participant-count', data.content)
-
-        // 참가자 수 업데이트 확인
-        // const participantMatch = data.content.match(/현재 (\d+)명이 참여/)
-        // if (participantMatch && participantMatch[1]) {
-        //   participantCount.value = parseInt(participantMatch[1])
-        //   emit('update-participant-count', participantCount.value)
-        // }
-
-        // 입장/퇴장 메시지 처리
-        // if (data.content.includes('입장') || data.content.includes('퇴장')) {
-        //   console.log('사용자 입장/퇴장:', data.content)
-        // }
       } else {
         // 일반 메시지 추가
         chatMessages.value.push(data)
@@ -110,8 +122,24 @@ const isConnected = computed(() => status.value === 'OPEN')
 const connectWebSocket = () => {
   if (!placeId.value) {
     console.warn('place_id가 없어 WebSocket 연결을 시도하지 않습니다.')
+    connectionError.value = '장소 정보가 없습니다'
     return
   }
+
+  const token = userStore.userInfo?.accessToken
+  if (!token) {
+    console.error('인증 토큰이 없어 WebSocket 연결을 시도하지 않습니다')
+    connectionError.value = '로그인이 필요합니다'
+    return
+  }
+
+  console.log('WebSocket 연결 시도:', {
+    placeId: placeId.value,
+    tokenLength: token.length,
+    url: wsUrl.value
+  })
+
+  connectionError.value = ''
   wsOpen()
 }
 
@@ -167,6 +195,7 @@ const loadUserInfo = async () => {
     }
   } catch (error) {
     console.error('사용자 정보를 불러오는 중 오류가 발생했습니다:', error)
+    throw error // 호출자에게 오류 전파
   }
 }
 
@@ -257,17 +286,26 @@ onBeforeUnmount(() => {
   wsClose()
 })
 
+// 연결 초기화 및 에러 처리를 위한 함수
+const initializeConnection = () => {
+  connectionError.value = ''
+  return loadUserInfo()
+    .then(() => loadChatHistory())
+    .then(() => connectWebSocket())
+    .catch(error => {
+      console.error('연결 초기화 중 오류 발생:', error)
+      connectionError.value = '연결 중 오류가 발생했습니다'
+      emit('connection-error', error)
+    })
+}
+
 // showChat 변화에 따라 WebSocket 연결 관리
 watch(
   () => props.showChat,
   (newVal) => {
     console.log('showChat changed to:', newVal)
     if (newVal) {
-      loadUserInfo().then(() => {
-        loadChatHistory().then(() => {
-          connectWebSocket()
-        })
-      })
+      initializeConnection()
     } else {
       wsClose()
     }
@@ -279,10 +317,8 @@ watch(
 watch(placeId, (newPlaceId, oldPlaceId) => {
   console.log('placeId changed from', oldPlaceId, 'to', newPlaceId)
   if (props.showChat && newPlaceId && newPlaceId !== oldPlaceId) {
-    loadChatHistory().then(() => {
-      wsClose()
-      connectWebSocket()
-    })
+    wsClose()
+    initializeConnection()
   }
 })
 </script>
@@ -296,6 +332,13 @@ watch(placeId, (newPlaceId, oldPlaceId) => {
       @mousedown.stop
     >
       <v-progress-circular v-if="isLoading" indeterminate color="primary" class="loading-spinner"></v-progress-circular>
+
+      <div v-else-if="connectionError" class="error-message">
+        <v-alert type="error" variant="tonal" density="compact">
+          {{ connectionError }}
+        </v-alert>
+        <v-btn size="small" color="primary" class="mt-4" @click="initializeConnection">재연결</v-btn>
+      </div>
 
       <div v-else-if="chatMessages.length === 0" class="empty-messages">
         아직 메시지가 없습니다. 첫 메시지를 보내보세요!
@@ -383,8 +426,9 @@ watch(placeId, (newPlaceId, oldPlaceId) => {
   margin: auto;
 }
 
-.empty-messages {
+.empty-messages, .error-message {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
