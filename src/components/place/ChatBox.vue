@@ -299,7 +299,7 @@ const sendMessage = () => {
 
     // iOS에서 키보드를 유지하면서 인풋에 포커스 유지
     if (isIOS.value && isKeyboardVisible.value) {
-      const inputElement = chatInputRef.value?.querySelector('input')
+      const inputElement = document.querySelector('.chat-input-area input')
       if (inputElement) {
         setTimeout(() => {
           inputElement.focus()
@@ -342,7 +342,7 @@ onMounted(() => {
 
   // 인풋 관련 이벤트 리스너
   setTimeout(() => {
-    const inputElement = chatInputRef.value?.querySelector('input')
+    const inputElement = document.querySelector('.chat-input-area input')
     if (inputElement) {
       inputElement.addEventListener('focus', handleInputFocus)
       inputElement.addEventListener('click', handleInputFocus)
@@ -365,7 +365,7 @@ onBeforeUnmount(() => {
     chatMessagesRef.value.removeEventListener('touchmove', handleTouchMove)
   }
 
-  const inputElement = chatInputRef.value?.querySelector('input')
+  const inputElement = document.querySelector('.chat-input-area input')
   if (inputElement) {
     inputElement.removeEventListener('focus', handleInputFocus)
     inputElement.removeEventListener('click', handleInputFocus)
