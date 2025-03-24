@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useUserStore, useGlobalStore } from '@/store'
 import { getInitials } from '@/plugins/utils'
 import { getRadiusAPI } from '@/network/app'
@@ -24,20 +24,92 @@ const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const radarContainer = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
-const tiltAngleX = ref(0) // X축 기울기 (위/아래 움직임)
-const tiltAngleY = ref(0) // Y축 기울기 (좌/우 움직임)
-const dragOffsetX = ref(0) // X축 드래그 이동 거리
-const dragOffsetY = ref(0) // Y축 드래그 이동 거리
+const tiltAngleX = ref(0)
+const tiltAngleY = ref(0)
+const dragOffsetX = ref(0)
+const dragOffsetY = ref(0)
 const lastMouseX = ref(0)
 const lastMouseY = ref(0)
-const dampingFactor = 0.92 // 감쇠 계수 (1보다 작을수록 더 빨리 안정화)
-const returnToCenter = ref(true) // 손을 놓았을 때 중앙으로 돌아갈지 여부
+const dampingFactor = 0.92
+const returnToCenter = ref(true)
+
+// 핀치 줌 관련 변수
+const zoomLevel = ref(1) // 1-5 사이의 줌 레벨 (1이 가장 넓은 영역)
+const isPinching = ref(false)
+const pinchStartDistance = ref(0)
+const lastPinchDistance = ref(0)
+const pinchThreshold = 5 // 더 민감하게 조정
+const pinchSensitivity = 0.3
+
+// 디버깅 정보 표시 관련 변수
+const showDebug = ref(false) // 디버깅 정보 표시 여부
+const debugInfo = reactive({
+  pinchDistance: 0,
+  pinchChange: 0,
+  touchCount: 0,
+  lastAction: ''
+})
 
 // 드래그 관련 변수
-const maxTilt = 30 // 최대 기울기 각도 (도)
-const maxOffset = 100 // 최대 이동 거리 (px)
-const tiltFactor = 0.15 // 마우스 움직임에 따른 기울기 변화 계수
-const dragFactor = 0.2 // 마우스 움직임에 따른 이동 변화 계수
+const maxTilt = 30
+const maxOffset = 100
+const tiltFactor = 0.15
+const dragFactor = 0.2
+
+// 줌 레벨별 속성 계산
+const levels = {
+  1: {
+    // 가장 넓은 영역, 적은 원
+    circleCount: 4,
+    circleSpacing: 130,
+    radarScale: 1.0, // 스케일이 더이상 변경되지 않음
+    spotRadiusMultiplier: 1.8,
+    opacityBase: 0.7,
+    opacityDecrement: 0.15,
+    circleWidth: 1 // 원의 테두리 두께
+  },
+  2: {
+    circleCount: 6,
+    circleSpacing: 110,
+    radarScale: 1.0,
+    spotRadiusMultiplier: 1.4,
+    opacityBase: 0.75,
+    opacityDecrement: 0.12,
+    circleWidth: 1.5
+  },
+  3: {
+    circleCount: 8,
+    circleSpacing: 90,
+    radarScale: 1.0,
+    spotRadiusMultiplier: 1.1,
+    opacityBase: 0.8,
+    opacityDecrement: 0.09,
+    circleWidth: 2
+  },
+  4: {
+    circleCount: 10,
+    circleSpacing: 70,
+    radarScale: 1.0,
+    spotRadiusMultiplier: 0.8,
+    opacityBase: 0.85,
+    opacityDecrement: 0.07,
+    circleWidth: 2.5
+  },
+  5: {
+    // 가장 좁은 영역, 많은 원
+    circleCount: 12,
+    circleSpacing: 50,
+    radarScale: 1.0,
+    spotRadiusMultiplier: 0.6,
+    opacityBase: 0.9,
+    opacityDecrement: 0.05,
+    circleWidth: 3
+  }
+}
+
+const zoomLevelProperties = computed(() => {
+  return levels[zoomLevel.value]
+})
 
 // 현재 유저 정보
 const currentUser = reactive<User>({
@@ -109,14 +181,16 @@ const calculateSpotPosition = (spot: Spot, index: number) => {
   const radian = (spot.angle * Math.PI) / 180
   const size = spot.isFeatured ? 75 : 45
 
+  // 줌 레벨에 따라 반경 조정
+  const adjustedRadius = spot.radius * zoomLevelProperties.value.spotRadiusMultiplier
+
   // 스팟의 위치에 따라 다른 움직임 계수 적용
-  // 바깥쪽 스팟은 더 많이 움직이도록 설정
-  const moveFactor = spot.radius > 180 ? 0.8 : 0.5
+  const moveFactor = adjustedRadius > 180 ? 0.8 : 0.5
 
   return {
     position: 'absolute',
-    left: `calc(50% + ${Math.cos(radian) * spot.radius - size / 2}px)`,
-    top: `calc(50% + ${Math.sin(radian) * spot.radius - size / 2}px)`,
+    left: `calc(50% + ${Math.cos(radian) * adjustedRadius - size / 2}px)`,
+    top: `calc(50% + ${Math.sin(radian) * adjustedRadius - size / 2}px)`,
     zIndex: 10,
     transform: `translate3d(${dragOffsetX.value * moveFactor}px, ${dragOffsetY.value * moveFactor}px, 0) rotateX(${-tiltAngleX.value * moveFactor}deg) rotateY(${tiltAngleY.value * moveFactor}deg)`
   }
@@ -127,8 +201,16 @@ const radarStyle = () => {
   return {
     transform: `translate3d(${dragOffsetX.value}px, ${dragOffsetY.value}px, 0) rotateX(${-tiltAngleX.value}deg) rotateY(${tiltAngleY.value}deg)`,
     transformStyle: 'preserve-3d',
-    transition: isDragging.value ? 'none' : 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'
+    transition:
+      isDragging.value || isPinching.value ? 'none' : 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'
   }
+}
+
+// 디버그 정보 토글
+const toggleDebug = () => {
+  showDebug.value = !showDebug.value
+  // 10번 클릭으로 토글하기 위한 용도의 함수이므로 각 클릭마다 로그
+  console.log('디버그 모드:', showDebug.value)
 }
 
 // 드래그 시작 이벤트 핸들러
@@ -194,8 +276,12 @@ const animateReturnToCenter = () => {
   if (Math.abs(dragOffsetY.value) < 0.01) dragOffsetY.value = 0
 
   // 모든 값이 0이 되면 애니메이션 중지
-  if (tiltAngleX.value === 0 && tiltAngleY.value === 0 &&
-    dragOffsetX.value === 0 && dragOffsetY.value === 0) {
+  if (
+    tiltAngleX.value === 0 &&
+    tiltAngleY.value === 0 &&
+    dragOffsetX.value === 0 &&
+    dragOffsetY.value === 0
+  ) {
     returnToCenter.value = false
     return
   }
@@ -211,75 +297,209 @@ const handleMouseLeave = () => {
   }
 }
 
-// 터치 이벤트 핸들러
+// 터치 이벤트 핸들러 (핀치 줌 기능 개선)
 const handleTouchStart = (e: TouchEvent) => {
-  if (e.touches.length !== 1) return
-  isDragging.value = true
-  lastMouseX.value = e.touches[0].clientX
-  lastMouseY.value = e.touches[0].clientY
-  returnToCenter.value = false
+  debugInfo.touchCount = e.touches.length
+
+  if (e.touches.length === 1) {
+    // 단일 터치 - 드래그로 처리
+    isDragging.value = true
+    isPinching.value = false
+    lastMouseX.value = e.touches[0].clientX
+    lastMouseY.value = e.touches[0].clientY
+    returnToCenter.value = false
+    debugInfo.lastAction = '드래그 시작'
+  } else if (e.touches.length === 2) {
+    // 핀치 제스처 시작 - 초기 거리 계산
+    isDragging.value = false
+    isPinching.value = true
+
+    const dx = e.touches[0].clientX - e.touches[1].clientX
+    const dy = e.touches[0].clientY - e.touches[1].clientY
+    pinchStartDistance.value = Math.sqrt(dx * dx + dy * dy)
+    lastPinchDistance.value = pinchStartDistance.value
+    debugInfo.pinchDistance = pinchStartDistance.value
+    debugInfo.lastAction = '핀치 시작'
+
+    console.log('핀치 시작:', pinchStartDistance.value)
+  }
 }
 
 const handleTouchMove = (e: TouchEvent) => {
-  if (!isDragging.value || e.touches.length !== 1) return
-
   // 기본 스크롤 동작 방지
   e.preventDefault()
+  debugInfo.touchCount = e.touches.length
 
-  const touch = e.touches[0]
-  const deltaX = touch.clientX - lastMouseX.value
-  const deltaY = touch.clientY - lastMouseY.value
+  if (e.touches.length === 2) {
+    // 핀칭 모드
+    isPinching.value = true
+    isDragging.value = false
 
-  tiltAngleY.value += deltaX * tiltFactor
-  tiltAngleX.value += deltaY * tiltFactor
-  dragOffsetX.value += deltaX * dragFactor
-  dragOffsetY.value += deltaY * dragFactor
+    // 핀치 거리 계산
+    const dx = e.touches[0].clientX - e.touches[1].clientX
+    const dy = e.touches[0].clientY - e.touches[1].clientY
+    const currentDistance = Math.sqrt(dx * dx + dy * dy)
+    debugInfo.pinchDistance = currentDistance
 
-  tiltAngleY.value = Math.max(Math.min(tiltAngleY.value, maxTilt), -maxTilt)
-  tiltAngleX.value = Math.max(Math.min(tiltAngleX.value, maxTilt), -maxTilt)
-  dragOffsetX.value = Math.max(Math.min(dragOffsetX.value, maxOffset), -maxOffset)
-  dragOffsetY.value = Math.max(Math.min(dragOffsetY.value, maxOffset), -maxOffset)
+    // 시작 거리가 0이면 초기화
+    if (pinchStartDistance.value === 0) {
+      pinchStartDistance.value = currentDistance
+      lastPinchDistance.value = currentDistance
+      debugInfo.lastAction = '핀치 거리 초기화'
+      return
+    }
 
-  lastMouseX.value = touch.clientX
-  lastMouseY.value = touch.clientY
+    // 핀치 거리 변화 확인
+    const pinchChange = currentDistance - lastPinchDistance.value
+    debugInfo.pinchChange = pinchChange
+    console.log(`[PINCH DEBUG] currentDistance: ${currentDistance}, lastPinchDistance: ${lastPinchDistance.value}, pinchChange: ${pinchChange}, threshold: ${pinchThreshold}, current zoomLevel: ${zoomLevel.value}`);
+
+    // 핀치 거리에 따라 줌 레벨 조정
+    if (Math.abs(pinchChange) > pinchThreshold) {
+      if (pinchChange > 0) {
+        // 핀치 아웃 - 줌 아웃 (레벨 감소 = 영역 확대)
+        console.log(`[PINCH ACTION] Pinch out detected. Current zoomLevel before: ${zoomLevel.value}`);
+        if (zoomLevel.value > 1) {
+          zoomLevel.value--
+          debugInfo.lastAction = `줌 아웃: ${zoomLevel.value}`;
+          console.log(`[PINCH ACTION] Zoom out executed. New zoomLevel: ${zoomLevel.value}`);
+        } else {
+          console.log('[PINCH ACTION] Zoom level already at minimum.');
+        }
+      } else if (pinchChange < 0) {
+        // 핀치 인 - 줌 인 (레벨 증가 = 영역 축소)
+        console.log(`[PINCH ACTION] Pinch in detected. Current zoomLevel before: ${zoomLevel.value}`);
+        if (zoomLevel.value < 5) {
+          zoomLevel.value++
+          debugInfo.lastAction = `줌 인: ${zoomLevel.value}`;
+          console.log(`[PINCH ACTION] Zoom in executed. New zoomLevel: ${zoomLevel.value}`);
+        } else {
+          console.log('[PINCH ACTION] Zoom level already at maximum.');
+        }
+      }
+      // 다음 비교를 위해 현재 거리 저장
+      lastPinchDistance.value = currentDistance
+    }
+  } else if (e.touches.length === 1) {
+    // 드래그 모드로 전환
+    if (isPinching.value) {
+      isPinching.value = false
+      pinchStartDistance.value = 0
+      lastPinchDistance.value = 0
+      isDragging.value = true
+      lastMouseX.value = e.touches[0].clientX
+      lastMouseY.value = e.touches[0].clientY
+      debugInfo.lastAction = '핀치에서 드래그로 전환'
+    }
+
+    if (isDragging.value) {
+      // 단일 터치 드래그 처리
+      const touch = e.touches[0]
+      const deltaX = touch.clientX - lastMouseX.value
+      const deltaY = touch.clientY - lastMouseY.value
+
+      tiltAngleY.value += deltaX * tiltFactor
+      tiltAngleX.value += deltaY * tiltFactor
+      dragOffsetX.value += deltaX * dragFactor
+      dragOffsetY.value += deltaY * dragFactor
+
+      tiltAngleY.value = Math.max(Math.min(tiltAngleY.value, maxTilt), -maxTilt)
+      tiltAngleX.value = Math.max(Math.min(tiltAngleX.value, maxTilt), -maxTilt)
+      dragOffsetX.value = Math.max(Math.min(dragOffsetX.value, maxOffset), -maxOffset)
+      dragOffsetY.value = Math.max(Math.min(dragOffsetY.value, maxOffset), -maxOffset)
+
+      lastMouseX.value = touch.clientX
+      lastMouseY.value = touch.clientY
+      debugInfo.lastAction = '드래그 중'
+    }
+  }
 }
 
-const handleTouchEnd = () => {
-  isDragging.value = false
-  returnToCenter.value = true
-  animateReturnToCenter()
+const handleTouchEnd = (e: TouchEvent) => {
+  debugInfo.touchCount = e.touches.length
+
+  if (isPinching.value) {
+    if (e.touches.length < 2) {
+      isPinching.value = false
+      debugInfo.lastAction = '핀치 종료'
+      console.log('핀치 종료')
+    }
+  }
+
+  if (isDragging.value) {
+    if (e.touches.length === 0) {
+      isDragging.value = false
+      returnToCenter.value = true
+      animateReturnToCenter()
+      debugInfo.lastAction = '드래그 종료'
+    }
+  }
+}
+
+// 디버깅 모드 진입을 위한 클릭 카운터
+let debugClickCounter = 0
+const handleContainerClick = () => {
+  debugClickCounter++
+  if (debugClickCounter >= 10) {
+    toggleDebug()
+    debugClickCounter = 0
+  }
 }
 
 const getRadius = async () => {
-  const res = await getRadiusAPI(
-    globalStore.lat,
-    globalStore.long,
-    1000,
-    1,
-    10,
-    []
-  )
-}
+  const zoomToRadius = {
+    1: 1500,
+    2: 1000,
+    3: 700,
+    4: 500,
+    5: 300
+  };
+  const radius = zoomToRadius[zoomLevel.value];
+  try {
+    const res = await getRadiusAPI(globalStore.lat, globalStore.long, radius, 1, 10, []);
+    if (res && res.data) {
+      console.log('getRadius: res.data type:', typeof res.data, res.data);
+      let newSpots;
+      if (Array.isArray(res.data)) {
+        newSpots = res.data;
+      } else if (res.data && typeof res.data[Symbol.iterator] === 'function') {
+        newSpots = Array.from(res.data);
+      } else {
+        newSpots = [res.data];
+      }
+      spots.splice(0, spots.length, ...newSpots);
+    }
+  } catch (error) {
+    console.error('Error fetching radius data:', error);
+  }
+};
 
 // 컴포넌트 마운트 시 이벤트 리스너 등록
 onMounted(() => {
-  getRadius()
+  getRadius();
   if (radarContainer.value) {
-    radarContainer.value.addEventListener('mousedown', handleMouseDown)
-    radarContainer.value.addEventListener('touchstart', handleTouchStart, { passive: false })
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('touchmove', handleTouchMove, { passive: false })
-    window.addEventListener('mouseup', handleMouseUp)
-    window.addEventListener('touchend', handleTouchEnd)
-    radarContainer.value.addEventListener('mouseleave', handleMouseLeave)
+    radarContainer.value.addEventListener('mousedown', handleMouseDown);
+    radarContainer.value.addEventListener('touchstart', handleTouchStart, { passive: false });
+    radarContainer.value.addEventListener('click', handleContainerClick);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchend', handleTouchEnd);
+    radarContainer.value.addEventListener('mouseleave', handleMouseLeave);
   }
-})
+});
+
+// 줌 레벨 변경 시 반경 API 재호출
+watch(zoomLevel, () => {
+  getRadius();
+});
 
 // 컴포넌트 언마운트 시 이벤트 리스너 해제
 onBeforeUnmount(() => {
   if (radarContainer.value) {
     radarContainer.value.removeEventListener('mousedown', handleMouseDown)
     radarContainer.value.removeEventListener('touchstart', handleTouchStart)
+    radarContainer.value.removeEventListener('click', handleContainerClick)
     window.removeEventListener('mousemove', handleMouseMove)
     window.removeEventListener('touchmove', handleTouchMove)
     window.removeEventListener('mouseup', handleMouseUp)
@@ -293,30 +513,24 @@ onBeforeUnmount(() => {
   <v-container class="discovery-container pa-4">
     <div class="header d-flex justify-space-between align-center mb-4">
       <div class="title">
-        <h2 class="text-h5 font-weight-bold">Discover Trending</h2>
-        <h2 class="text-h5 font-weight-bold">Checkpoint in Japan</h2>
+        <h2 class="text-h6 font-weight-bold">What's poppin' within 1km</h2>
+        <h2 class="text-h6 font-weight-bold">Let's hit the hottest spots near you.</h2>
       </div>
-      <v-btn icon>
-        <v-icon>mdi-dots-vertical</v-icon>
-      </v-btn>
     </div>
 
-    <div
-      class="radar-container"
-      ref="radarContainer"
-      :style="{ perspective: '1000px' }"
-    >
+    <div class="radar-container" ref="radarContainer" :style="{ perspective: '1000px' }">
       <div class="radar-inner-container" :style="radarStyle()">
-        <!-- 퍼지는 원 애니메이션 -->
+        <!-- 퍼지는 원 애니메이션 - 줌 레벨에 따라 동적 조정 -->
         <div
-          v-for="(circle, index) in 8"
+          v-for="index in zoomLevelProperties.circleCount"
           :key="`circle-${index}`"
           class="radar-circle"
           :style="{
             animationDelay: `${index * 0.2}s`,
-            width: `${(index + 1) * 70}px`,
-            height: `${(index + 1) * 70}px`,
-            opacity: `${0.9 - index * 0.08}`
+            width: `${(index + 1) * zoomLevelProperties.circleSpacing}px`,
+            height: `${(index + 1) * zoomLevelProperties.circleSpacing}px`,
+            opacity: `${zoomLevelProperties.opacityBase - index * zoomLevelProperties.opacityDecrement}`,
+            borderWidth: `${zoomLevelProperties.circleWidth}px`
           }"
         ></div>
 
@@ -330,8 +544,14 @@ onBeforeUnmount(() => {
         <!-- 중앙 유저 썸네일 -->
         <div class="user-thumbnail">
           <v-avatar size="60">
-            <v-img v-if="userStore.userInfo?.thumbnail_url" :src="userStore.userInfo?.thumbnail_url" cover />
-            <span v-else class="text-h4">{{ getInitials(String(userStore.userInfo?.user_name)) }}</span>
+            <v-img
+              v-if="userStore.userInfo?.thumbnail_url"
+              :src="userStore.userInfo?.thumbnail_url"
+              cover
+            />
+            <span v-else class="text-h4">{{
+              getInitials(String(userStore.userInfo?.user_name))
+            }}</span>
           </v-avatar>
         </div>
       </div>
@@ -382,6 +602,42 @@ onBeforeUnmount(() => {
           <div class="speech-pointer"></div>
         </div>
       </div>
+
+      <!-- 디버그 정보 패널 -->
+      <div v-if="showDebug" class="debug-panel">
+        <div class="debug-title">DEBUG INFO</div>
+        <div>줌 레벨: {{ zoomLevel }}</div>
+        <div>핀치 상태: {{ isPinching ? '활성' : '비활성' }}</div>
+        <div>드래그 상태: {{ isDragging ? '활성' : '비활성' }}</div>
+        <div>터치 개수: {{ debugInfo.touchCount }}</div>
+        <div>핀치 거리: {{ debugInfo.pinchDistance.toFixed(2) }}</div>
+        <div>핀치 변화: {{ debugInfo.pinchChange.toFixed(2) }}</div>
+        <div>마지막 액션: {{ debugInfo.lastAction }}</div>
+      </div>
+    </div>
+
+    <!-- 줌 레벨 인디케이터 (현대적 디자인) -->
+    <div class="zoom-indicator-container mt-4">
+      <div class="zoom-level-track">
+        <div class="zoom-level-progress" :style="{ width: `${(zoomLevel / 5) * 100}%` }"></div>
+        <div
+          v-for="level in 5"
+          :key="`marker-${level}`"
+          class="zoom-level-marker"
+          :class="{ active: level <= zoomLevel }"
+          :style="{ left: `${((level - 1) / 4) * 100}%` }"
+        >
+          <div class="zoom-level-dot"></div>
+          <div class="zoom-level-pulse" v-if="level === zoomLevel"></div>
+        </div>
+      </div>
+      <div class="zoom-level-labels">
+        <div class="zoom-level-label">광역</div>
+        <div class="zoom-level-label current">
+          {{ ['매우 넓음', '넓음', '보통', '좁음', '매우 좁음'][zoomLevel - 1] }}
+        </div>
+        <div class="zoom-level-label">근거리</div>
+      </div>
     </div>
 
     <!-- 하단 친구 정보 -->
@@ -429,7 +685,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   align-items: center;
   cursor: grab;
-  overflow: visible; /* 오버플로우를 visible로 변경하여 스팟이 컨테이너 밖으로 나갈 수 있도록 함 */
+  overflow: visible;
   user-select: none;
 }
 
@@ -496,6 +752,115 @@ onBeforeUnmount(() => {
   transform: translate(-50%, -50%);
   z-index: 7;
   animation: pulse-outer 3s ease-in-out infinite;
+}
+
+/* 새로운 줌 레벨 인디케이터 스타일 */
+.zoom-indicator-container {
+  width: 100%;
+  padding: 0 20px;
+  margin-bottom: 10px;
+}
+
+.zoom-level-track {
+  position: relative;
+  height: 4px;
+  background-color: rgba(100, 150, 255, 0.2);
+  border-radius: 2px;
+  margin-bottom: 8px;
+}
+
+.zoom-level-progress {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(100, 150, 255, 0.5), rgba(100, 170, 255, 0.9));
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zoom-level-marker {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.zoom-level-dot {
+  width: 8px;
+  height: 8px;
+  background-color: rgba(100, 150, 255, 0.3);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.zoom-level-marker.active .zoom-level-dot {
+  background-color: rgba(100, 150, 255, 0.9);
+  box-shadow: 0 0 10px rgba(100, 150, 255, 0.5);
+}
+
+.zoom-level-pulse {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(100, 150, 255, 0.2);
+  animation: pulse-marker 2s infinite;
+}
+
+.zoom-level-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgba(100, 120, 180, 0.7);
+  margin-top: 4px;
+}
+
+.zoom-level-label.current {
+  color: rgba(80, 120, 200, 1);
+  font-weight: bold;
+  font-size: 14px;
+  transform: translateY(-2px);
+  text-shadow: 0 0 10px rgba(100, 150, 255, 0.3);
+}
+
+/* 디버그 패널 */
+.debug-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.debug-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  padding-bottom: 3px;
+}
+
+@keyframes pulse-marker {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
 }
 
 @keyframes pulse-outer {
