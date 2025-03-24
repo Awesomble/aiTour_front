@@ -28,7 +28,7 @@ onMounted(() => {
   <v-main class="pt-0">
     <router-view v-slot="{ Component }">
       <transition name="slide-fade" mode="out-in">
-        <keep-alive :include="['main-home', 'main-map', 'tour-planner', 'my-bag']">
+        <keep-alive :include="['main-home', 'main-map', 'hotspots-radar', 'tour-planner', 'my-bag']">
           <component :is="Component" :key="$route.name" />
         </keep-alive>
       </transition>

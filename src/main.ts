@@ -38,7 +38,7 @@ const toastOptions = {
   icon: true,
   rtl: false,
   transition: 'Vue-Toastification__bounce',
-  maxToasts: 3,
+  maxToasts: 1,
   newestOnTop: true,
   containerClassName: 'toast-container-compact',
   toastClassName: 'toast-compact',

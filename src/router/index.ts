@@ -53,6 +53,13 @@ const router = createRouter({
           }
         },
         {
+          path: '/hotspotsRadar',
+          name: 'hotspots-radar',
+          component: () => import('@/views/radar/HotspotsRadar.vue'),
+          meta: {
+          }
+        },
+        {
           path: '/notifications',
           name: 'notifications',
           component: () => import('@/views/my/Notifications.vue'),

@@ -283,6 +283,7 @@ const handleChatHeightChange = (chatHeight: number) => {
 
 // Close popup dialog
 const closePopup = () => {
+  showChatPopup.value = false
   const query = { ...route.query }
   delete query.place
   router.replace({
@@ -377,7 +378,6 @@ onBeforeUnmount(() => {
           :detail="detail"
           @showchatpop="toggleChatPopup"
         />
-
         <ChatPanel
           :loading="loading"
           :detail="detail"

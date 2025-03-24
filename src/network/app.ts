@@ -14,7 +14,12 @@ export const getPlacesListAPI = async (page: number, limit: number = 10, categor
 export const getPlacesDetailAPI = async (place_id: string | RouteParamValue[]) => {
   return instance.get(`/places/${place_id}`)
 }
-
+export const getRadiusAPI = async (lat: number, lng: number, radius: number, page: number, limit: number = 10, category: number[]) => {
+  return instance.get(`/places/radius`, {
+    params: {lat, lng, radius, page, limit, category},
+    paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
+  })
+}
 export const getMeAPI = async (email: string = '', user_name: string = '') => {
   return instance.get(`/user/me`, { params: { email, user_name } })
 }
@@ -25,8 +30,36 @@ export const updateThumbnailAPI = async (payload: any) => {
   return instance.post(`/user/me/thumbnail`, payload, { headers: { 'Content-Type': 'multipart/form-data' }})
 }
 
-export const getDrotectedAPI = async () => {
-  return instance.get(`/auth/protected`)
+
+// 채팅 API 함수 추가
+/**
+ * 특정 장소의 채팅 메시지 히스토리를 조회합니다.
+ * @param place_id 장소 ID
+ * @param limit 최대 조회 메시지 수 (기본값: 50)
+ * @param offset 조회 시작 오프셋 (기본값: 0)
+ */
+export const getChatMessagesAPI = async (place_id: string, limit: number = 50, offset: number = 0) => {
+  return instance.get(`/chat/${place_id}/messages`, {
+    params: { limit, offset }
+  })
 }
 
+/**
+ * WebSocket 연결을 위한 URL을 생성합니다.
+ * 토큰과 기본 URL은 이미 appInstance()에서 관리되므로 별도로 전달하지 않습니다.
+ * @param place_id 장소 ID
+ * @returns WebSocket 연결 URL
+ */
+export const getChatWebSocketURL = (place_id: string): string => {
+  // 현재 환경의 프로토콜에 따라 ws 또는 wss 사용
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+
+  // baseURL은 Axios 인스턴스에서 관리되므로 window.location.host 사용
+  // 실제 구현시 appInstance()의 baseURL 설정에 맞게 수정 필요
+  const host = window.location.host
+
+  // 토큰은 인스턴스에서 자동으로 관리되므로 별도 추가 불필요
+  // 실제 사용 시 인증 토큰을 파라미터로 추가해야 할 수 있음
+  return `${protocol}//${host}/api/chat/ws/${place_id}`
+}
 

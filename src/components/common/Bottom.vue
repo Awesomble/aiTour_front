@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { useGlobalStore } from '@/store'
 import { useRoute } from 'vue-router'
-import { Home, MapPin, Sparkles, Briefcase } from 'lucide-vue-next'
+import { Home, MapPin, Sparkles, Briefcase, Radar } from 'lucide-vue-next'
 
-const golbalStore = useGlobalStore()
 const route = useRoute()
 </script>
 
@@ -24,6 +23,14 @@ const route = useRoute()
         variant="text"
       >
         <MapPin :size="24" :stroke-width="route.name === 'main-map' ? 2.5 : 1.8" />
+      </v-btn>
+
+      <v-btn
+        :color="route.name === 'hotspots-radar' ? 'primary' : 'gray'"
+        :to="{ name: 'hotspots-radar' }"
+        variant="text"
+      >
+        <Radar :size="24" :stroke-width="route.name === 'hotspots-radar' ? 2.5 : 1.8" />
       </v-btn>
 
       <v-btn
