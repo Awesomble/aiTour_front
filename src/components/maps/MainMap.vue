@@ -122,7 +122,8 @@ const initializeMap = async () => {
       mapId: 'c8495523c4cf0dd7',
       center: center.value,
       zoom: zoom.value,
-      disableDefaultUI: true
+      disableDefaultUI: true,
+      gestureHandling: 'cooperative'
     })
 
     // Advanced marker implementation for user location
