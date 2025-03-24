@@ -89,7 +89,7 @@ const {
         console.log('Auth status:', data)
         if (data.status === 'error') {
           connectionError.value = data.message || '인증 오류'
-          emit('connection-error', '인증 실패')
+          emit('connection-error', '인증실패')
         }
       } else if (data.message_type === 'system') {
         emit('update-participant-count', data.content)
