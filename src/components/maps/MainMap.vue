@@ -123,7 +123,7 @@ const initializeMap = async () => {
       center: center.value,
       zoom: zoom.value,
       disableDefaultUI: true,
-      gestureHandling: 'cooperative'
+      gestureHandling: 'greedy'
     })
 
     // Advanced marker implementation for user location
