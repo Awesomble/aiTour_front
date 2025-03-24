@@ -5,7 +5,6 @@ import { useUserStore } from '@/store'
 import { useWebSocket } from '@vueuse/core'
 import { getInitials } from '@/plugins/utils'
 
-// 메시지 인터페이스 정의
 interface ChatMessage {
   message_id: string
   place_id: string
@@ -17,22 +16,16 @@ interface ChatMessage {
   thumbnail_url?: string
 }
 
-// User Store 초기화
 const userStore = useUserStore()
-
-// 컴포넌트 Props 정의
 const props = defineProps({
   loading: { type: Boolean, default: true },
   detail: { type: Object, default: () => ({}) },
   showChat: { type: Boolean, default: false },
   heightState: { type: String, default: 'min' },
 })
-
-// 이벤트 정의
 const emit = defineEmits(['system-message', 'update-participant-count', 'connection-error'])
 
 const WS_BASE_URL = import.meta.env?.VITE_WS_URL
-// Chat 관련 상태
 const chatMessages = ref<ChatMessage[]>([])
 const newMessage = ref('')
 const isLoading = ref(true)
@@ -42,11 +35,9 @@ const chatMessagesRef = ref<HTMLElement | null>(null)
 const participantCount = ref(0)
 const connectionError = ref('')
 
-// 장소 ID 계산
 const placeId = computed(() => props.detail?.place_id || '')
 const showInputBox = computed(() => props.heightState !== 'min')
 
-// WebSocket URL 구성
 const wsUrl = computed(() => {
   const token = userStore.userInfo?.accessToken || ''
   const url = `${WS_BASE_URL}/chat/ws/${placeId.value}?token=${token}`
@@ -54,7 +45,6 @@ const wsUrl = computed(() => {
   return url
 })
 
-// useWebSocket hook
 const {
   status,
   data,
@@ -64,15 +54,15 @@ const {
   close: wsClose
 } = useWebSocket(wsUrl, {
   autoReconnect: {
-    retries: 3,
-    delay: 1000,
+    retries: 5,
+    delay: 2000,
     onFailed() {
       console.error('WebSocket 재연결 실패, 수동 재연결 필요')
       connectionError.value = '채팅 서버 연결에 실패했습니다. 페이지를 새로고침 해보세요.'
       emit('connection-error', '연결 실패')
     }
   },
-  immediate: false,
+  immediate: true,
   onConnected: () => {
     console.log('WebSocket 연결됨')
     chatInputEnabled.value = true
@@ -102,10 +92,8 @@ const {
           emit('connection-error', '인증 실패')
         }
       } else if (data.message_type === 'system') {
-        // 시스템 메시지 처리
         emit('update-participant-count', data.content)
       } else {
-        // 일반 메시지 추가
         chatMessages.value.push(data)
         scrollToBottom()
       }
@@ -115,64 +103,51 @@ const {
   }
 })
 
-// WebSocket 연결 상태
 const isConnected = computed(() => status.value === 'OPEN')
 
-// 연결 시도
 const connectWebSocket = () => {
   if (!placeId.value) {
     console.warn('place_id가 없어 WebSocket 연결을 시도하지 않습니다.')
     connectionError.value = '장소 정보가 없습니다'
     return
   }
-
   const token = userStore.userInfo?.accessToken
   if (!token) {
     console.error('인증 토큰이 없어 WebSocket 연결을 시도하지 않습니다')
     connectionError.value = '로그인이 필요합니다'
     return
   }
-
   console.log('WebSocket 연결 시도:', {
     placeId: placeId.value,
     tokenLength: token.length,
     url: wsUrl.value
   })
-
   connectionError.value = ''
   wsOpen()
 }
 
-// 채팅 기록 로드
 const loadChatHistory = async () => {
   if (!placeId.value) {
     console.error('placeId is empty, cannot load chat history')
     return
   }
-
   isLoading.value = true
   console.log('Loading chat history for place ID:', placeId.value)
-
   try {
     const response = await getChatMessagesAPI(placeId.value)
     console.log('Chat history response received:', response ? 'Success' : 'Failed')
-
-    // 시스템 메시지 확인 (참가자 수 추출)
     const systemMessages = response.data.filter((msg: ChatMessage) => msg.message_type === 'system')
     for (const msg of systemMessages) {
       const participantMatch = msg.content.match(/현재 (\d+)명이 참여/)
       if (participantMatch && participantMatch[1]) {
         participantCount.value = parseInt(participantMatch[1])
         emit('update-participant-count', participantCount.value)
-        break // 가장 최근 참가자 수 정보 사용
+        break
       }
     }
-
-    // 일반 메시지만 필터링
     chatMessages.value = response.data
       .filter((msg: ChatMessage) => msg.message_type !== 'system')
       .sort((a: ChatMessage, b: ChatMessage) => a.timestamp - b.timestamp)
-
     scrollToBottom()
   } catch (error) {
     console.error('채팅 기록을 불러오는 중 오류가 발생했습니다:', error)
@@ -182,37 +157,29 @@ const loadChatHistory = async () => {
   }
 }
 
-// 사용자 정보 로드
 const loadUserInfo = async () => {
   try {
     console.log('Loading user info')
     const response = await getMeAPI()
     console.log('User info response received:', response ? 'Success' : 'Failed')
-
     currentUser.value = {
       sub: response.data.sub,
       user_name: response.data.user_name || '방문자'
     }
   } catch (error) {
     console.error('사용자 정보를 불러오는 중 오류가 발생했습니다:', error)
-    throw error // 호출자에게 오류 전파
+    throw error
   }
 }
 
-// 메시지 전송
 const sendMessage = () => {
-  if (!newMessage.value.trim()) {
-    return
-  }
-
+  if (!newMessage.value.trim()) return
   try {
     const messageData = {
       content: newMessage.value.trim(),
       message_type: 'text'
     }
-
     console.log('Sending message:', messageData)
-
     if (!isConnected.value) {
       console.log('Not connected - adding message locally')
       const localMessage: ChatMessage = {
@@ -230,14 +197,12 @@ const sendMessage = () => {
     } else {
       wsSend(JSON.stringify(messageData))
     }
-
     newMessage.value = ''
   } catch (error) {
     console.error('메시지 전송 중 오류가 발생했습니다:', error)
   }
 }
 
-// 스크롤을 최신 메시지 위치로
 const scrollToBottom = () => {
   setTimeout(() => {
     if (chatMessagesRef.value) {
@@ -246,27 +211,18 @@ const scrollToBottom = () => {
   }, 50)
 }
 
-// 스크롤 이벤트 처리 함수
-const handleWheel = (e: WheelEvent) => {
-  // 이벤트 전파 중지 (부모의 드래그 핸들링 방지)
-  e.stopPropagation()
-}
-
+const handleWheel = (e: WheelEvent) => e.stopPropagation()
 const handleTouchStart = (e: TouchEvent) => {
-  // 스크롤 영역 내에서만 이벤트 캡처
   if (chatMessagesRef.value && e.target && chatMessagesRef.value.contains(e.target as Node)) {
     e.stopPropagation()
   }
 }
-
 const handleTouchMove = (e: TouchEvent) => {
-  // 스크롤 영역 내에서만 이벤트 캡처
   if (chatMessagesRef.value && e.target && chatMessagesRef.value.contains(e.target as Node)) {
     e.stopPropagation()
   }
 }
 
-// 이벤트 리스너 등록/제거
 onMounted(() => {
   if (chatMessagesRef.value) {
     chatMessagesRef.value.addEventListener('wheel', handleWheel, { passive: false })
@@ -274,19 +230,16 @@ onMounted(() => {
     chatMessagesRef.value.addEventListener('touchmove', handleTouchMove, { passive: false })
   }
 })
-
 onBeforeUnmount(() => {
   if (chatMessagesRef.value) {
     chatMessagesRef.value.removeEventListener('wheel', handleWheel)
     chatMessagesRef.value.removeEventListener('touchstart', handleTouchStart)
     chatMessagesRef.value.removeEventListener('touchmove', handleTouchMove)
   }
-
   console.log('Chat component unmounting')
   wsClose()
 })
 
-// 연결 초기화 및 에러 처리를 위한 함수
 const initializeConnection = () => {
   connectionError.value = ''
   return loadUserInfo()
@@ -299,7 +252,6 @@ const initializeConnection = () => {
     })
 }
 
-// showChat 변화에 따라 WebSocket 연결 관리
 watch(
   () => props.showChat,
   (newVal) => {
@@ -313,7 +265,6 @@ watch(
   { immediate: true }
 )
 
-// placeId 변화 시 재연결
 watch(placeId, (newPlaceId, oldPlaceId) => {
   console.log('placeId changed from', oldPlaceId, 'to', newPlaceId)
   if (props.showChat && newPlaceId && newPlaceId !== oldPlaceId) {
