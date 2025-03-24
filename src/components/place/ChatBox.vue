@@ -328,6 +328,17 @@ watch(placeId, (newPlaceId, oldPlaceId) => {
         :disabled="!chatInputEnabled"
         @keyup.enter="sendMessage"
         class="chat-input"
+        autocomplete="off"
+        :autofocus="false"
+        :rules="[]"
+        :counter="false"
+        :input-attr="{
+      autocomplete: 'off',
+      autocorrect: 'off',
+      autocapitalize: 'off',
+      spellcheck: 'false',
+      inputmode: 'text'
+    }"
       ></v-text-field>
 
       <v-btn
@@ -374,10 +385,29 @@ watch(placeId, (newPlaceId, oldPlaceId) => {
   padding: 8px 12px;
   border-top: 1px solid #eee;
   background-color: white;
-  /* 모바일 최적화 */
-  position: sticky;
+  /* 모바일 최적화 개선 */
+  position: fixed; /* sticky 대신 fixed 사용 */
   bottom: 0;
-  z-index: 1;
+  left: 0;
+  right: 0;
+  z-index: 10; /* 더 높은 z-index */
+  transition: none; /* all 0 대신 none 사용 */
+  transform: translateZ(0); /* 하드웨어 가속 활성화 */
+  will-change: transform; /* 브라우저 최적화 힌트 */
+  /* 사파리 패딩 문제 해결 */
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  margin-bottom: 0;
+
+  /* 사파리 추가 최적화 */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 입력필드 최적화 */
+.chat-input {
+  -webkit-appearance: none;
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
 }
 
 .loading-spinner {
