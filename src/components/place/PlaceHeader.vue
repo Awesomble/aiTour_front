@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import BtnNavi from '@/components/button/BtnNavi.vue'
+import { useGlobalStore } from '@/store'
 
 const props = defineProps({
   loading: {
@@ -15,6 +17,7 @@ const props = defineProps({
 // Simplified emit to match popup's handleContentStart
 defineEmits(['mousedown', 'touchstart'])
 
+const globalStore = useGlobalStore()
 // Format day name to Korean
 const formatDay = (day: any) => {
   const dayMap = {
@@ -64,32 +67,42 @@ const operatingStatus = computed(() => {
     v-if="!loading"
     class="place-header"
     @mousedown="$emit('mousedown', $event)"
-    @touchstart="$emit('touchstart', $event)">
-    <!-- Place name -->
-    <h1 class="place-name">{{ detail?.name }}</h1>
-
-    <!-- Category with icon -->
-    <div class="category-container">
-      <div
-        class="category-icon"
-        v-if="detail?.category?.icon"
-        v-html="detail?.category.icon"
-        :style="{ color: detail?.category?.icon_color || '#673AB7' }">
+    @touchstart="$emit('touchstart', $event)"
+  >
+    <div>
+      <!-- Place name -->
+      <h1 class="place-name">{{ detail?.name }}</h1>
+      <!-- Category with icon -->
+      <div class="category-container">
+        <div
+          class="category-icon"
+          v-if="detail?.category?.icon"
+          v-html="detail?.category.icon"
+          :style="{ color: detail?.category?.icon_color || '#673AB7' }">
+        </div>
+        <span class="category">{{ detail?.category?.name || 'Landmark' }}</span>
       </div>
-      <span class="category">{{ detail?.category?.name || 'Landmark' }}</span>
-    </div>
-
-    <!-- Address -->
-    <div v-if="false" class="address-container">
-      <span class="address-icon">📍</span>
-      <span class="address">{{ detail?.address }}</span>
-    </div>
-
-    <!-- Operating hours -->
-    <div class="business-hours">
+      <!-- Address -->
+      <div v-if="false" class="address-container">
+        <span class="address-icon">📍</span>
+        <span class="address">{{ detail?.address }}</span>
+      </div>
+      <!-- Operating hours -->
+      <div class="business-hours">
       <span class="hours-icon">🕒</span>
       <span class="hours-text">{{ operatingStatus }}</span>
     </div>
+    </div>
+
+    <BtnNavi
+      :map-type="'google'"
+      :start-lat="globalStore.lat"
+      :start-lng="globalStore.long"
+      :end-lat="props.detail?.latitude"
+      :end-lng="props.detail?.longitude"
+      :transport-mode="'walk'"
+      style="margin-right: 50px;"
+    />
   </div>
 
   <!-- Skeleton loading state -->
@@ -108,7 +121,10 @@ const operatingStatus = computed(() => {
 <style scoped lang="scss">
 /* Place header styling */
 .place-header {
-  padding: 2px 16px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 16px 12px;
   background-color: white;
 }
 

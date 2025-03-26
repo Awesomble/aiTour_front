@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getPlacesDetailAPI } from '@/network/app'
+import { useGlobalStore } from '@/store'
 import PlaceHeader from '@/components/place/PlaceHeader.vue'
 import PlacePhotos from '@/components/place/PlacePhotos.vue'
 import InfoPanel from '@/components/place/InfoPanel.vue'
@@ -23,6 +24,7 @@ const loading = ref(true)
 const containerRef = ref<HTMLElement | null>(null)
 const contentRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
+const globalStore = useGlobalStore()
 
 // Height states
 const MIN_HEIGHT = 150
@@ -166,9 +168,7 @@ const startManualDrag = (e: any) => {
   }
 
   // Get initial position
-  const clientY = e.type.includes('touch')
-    ? (e.touches?.[0]?.clientY || 0)
-    : e.clientY
+  const clientY = e.type.includes('touch') ? e.touches?.[0]?.clientY || 0 : e.clientY
 
   isDragging.value = true
   startY.value = clientY
@@ -188,9 +188,7 @@ const startManualDrag = (e: any) => {
 const onManualDrag = (e: any) => {
   if (!isDragging.value) return
 
-  const clientY = e.type.includes('touch')
-    ? (e.touches?.[0]?.clientY || 0)
-    : e.clientY
+  const clientY = e.type.includes('touch') ? e.touches?.[0]?.clientY || 0 : e.clientY
 
   // For touch events, we need to determine scroll vs drag intent
   if (e.type.includes('touch')) {
@@ -202,7 +200,8 @@ const onManualDrag = (e: any) => {
 
       // If scrolled down while at top, or clear drag down motion
       if ((isAtTopScroll() && deltaY > 0) || Math.abs(deltaY) > dragThreshold) {
-        if (touchMoveCount <= 3) { // Only interfere early in the gesture
+        if (touchMoveCount <= 3) {
+          // Only interfere early in the gesture
           e.preventDefault() // Prevent browser scroll
         }
       } else {
@@ -317,7 +316,6 @@ onBeforeUnmount(() => {
       >
         <div class="drag-indicator"></div>
       </div>
-
       <!-- Close button -->
       <button class="close-button" @click="closePopup">
         <span class="icon">✕</span>
@@ -373,11 +371,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <InfoPanel
-          :loading="loading"
-          :detail="detail"
-          @showchatpop="toggleChatPopup"
-        />
+        <InfoPanel :loading="loading" :detail="detail" @showchatpop="toggleChatPopup" />
         <ChatPanel
           :loading="loading"
           :detail="detail"
@@ -433,9 +427,9 @@ onBeforeUnmount(() => {
 }
 
 .drag-handle {
-  height: 24px;
+  height: 14px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   cursor: grab;
   user-select: none;

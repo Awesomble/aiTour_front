@@ -181,7 +181,7 @@ watch(
         <div class="brand-section">
           <div class="brand-content">
             <h1 class="text-h4 font-weight-bold text-white mb-4">AI Tour</h1>
-            <p class="text-subtitle-1 text-white-darken-3 mb-8">
+            <p class="text-subtitle-1 text-white mb-8">
               인공지능으로 더 스마트한<br>여행 경험을 만나보세요
             </p>
             <div class="brand-features">

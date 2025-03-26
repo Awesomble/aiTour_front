@@ -15,8 +15,8 @@ const mountIdx = ref(1)
 
 // Category definitions
 const categories = [
-  { id: 83, icon: Camera, name: 'Photo Spots' },
-  { id: [77, 82], icon: Toilet, name: 'Restrooms' }
+  { id: [], icon: Camera, name: 'Photo Spots' },
+  { id: [], icon: Toilet, name: 'Restrooms' }
 ]
 
 // Handle marker click
