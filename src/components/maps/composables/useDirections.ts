@@ -124,7 +124,7 @@ export function useDirections(map: any) {
     // 경로에 화살표 심볼 추가
     const arrowSymbol = {
       path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-      scale: 2, // 화살표 크기 증가
+      scale: 1, // 화살표 크기 증가
       strokeColor: '#FFFFFF',
       fillColor: strokeColor,
       fillOpacity: 1,

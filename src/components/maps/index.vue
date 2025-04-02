@@ -376,31 +376,6 @@ defineExpose({
   }
 }
 
-// Route markers styling
-.route-marker {
-  cursor: pointer;
-
-  .route-marker-inner {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-}
-
-.start-marker .route-marker-inner {
-  background-color: #4285F4;
-  color: white;
-}
-
-.end-marker .route-marker-inner {
-  background-color: #EA4335;
-  color: white;
-}
-
-// Image styling
 .landmark-image {
   width: 100%;
   height: 100%;
@@ -408,7 +383,7 @@ defineExpose({
   object-position: center;
 }
 
-// Animations
+// Route markers styling
 @keyframes pin-appear {
   0% {
     transform: translateY(10px);
@@ -419,7 +394,6 @@ defineExpose({
     opacity: 1;
   }
 }
-
 @keyframes pulse-light {
   0% {
     box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
@@ -431,7 +405,6 @@ defineExpose({
     box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
   }
 }
-
 @keyframes marker-appear {
   0% {
     transform: scale(0.8);
@@ -441,94 +414,5 @@ defineExpose({
     transform: scale(1);
     opacity: 1;
   }
-}
-
-.route-marker {
-  cursor: pointer;
-  position: relative;
-}
-
-.route-marker-inner {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: bold;
-  white-space: nowrap;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transform: scale(1);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
-}
-
-.route-marker-inner:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-}
-
-.start-marker .route-marker-inner {
-  background-color: #4285F4;
-  color: white;
-  position: relative;
-}
-
-.start-marker .route-marker-inner::before {
-  content: "";
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #4285F4;
-}
-
-.end-marker .route-marker-inner {
-  background-color: #EA4335;
-  color: white;
-  position: relative;
-}
-
-.end-marker .route-marker-inner::before {
-  content: "";
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #EA4335;
-}
-
-/* 맵 로드 애니메이션 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes pulseMarker {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-}
-
-.route-marker .route-marker-inner {
-  animation: fadeIn 0.5s ease, pulseMarker 2s ease-in-out infinite;
-  animation-delay: 0s, 0.5s;
 }
 </style>

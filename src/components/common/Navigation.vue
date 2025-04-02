@@ -114,6 +114,7 @@ onBeforeUnmount(() => {
       <div class="app-version-inner">
         <v-icon size="12" class="version-icon">mdi-information-outline</v-icon>
         <span>v{{ appVersion }}</span>
+        <span>bearing:{{ golbalStore.bearing }}</span>
       </div>
     </div>
 
