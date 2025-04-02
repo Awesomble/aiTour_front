@@ -34,6 +34,8 @@ const handleMarkerClick = async (placeId: any) => {
 watch(
   iptMainCategoryList,
   (newValue, oldValue) => {
+    // 대카테고리 변경시 진동
+    window.AndroidInterface.vibrate(1)
     if (!newValue.length) {
       iptMainCategoryList.value = [0]
       return
@@ -46,12 +48,11 @@ watch(
         // 조건 3: 0이 추가되었으면 [0]으로 설정
         iptMainCategoryList.value = [0]
         try {
-          window.AndroidInterface.vibrate(3)
         } catch (err: any) {}
       } else {
-        try {
-          window.AndroidInterface.vibratePattern('success')
-        } catch (err: any) {}
+        // try {
+        //   window.AndroidInterface.vibratePattern('success')
+        // } catch (err: any) {}
         iptMainCategoryList.value = newValue.filter((val) => val !== 0)
       }
       return

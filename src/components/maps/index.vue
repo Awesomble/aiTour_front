@@ -10,7 +10,7 @@
 <!--    formatters.ts           # 포맷팅 유틸리티-->
 <!--    mapHelpers.ts           # 지도 관련 헬퍼 함수-->
 <script setup lang="ts">
-import { onActivated, onMounted, onBeforeUnmount, defineProps, defineEmits, watch } from 'vue'
+import { onActivated, onMounted, onBeforeUnmount, defineProps, defineEmits, watch, nextTick } from 'vue'
 import { useMapStore } from '@/store'
 
 // 모듈화된 컴포저블 가져오기
@@ -93,7 +93,8 @@ const { clearDirections, findDirections } = useDirections(map)
 
 // 컴포넌트 라이프사이클 훅
 onMounted(async () => {
-  initGPS()
+  await nextTick()
+  await initGPS()
   const mapInstance = await initializeMap()
   if (mapInstance) {
     setupMapEventListeners()
