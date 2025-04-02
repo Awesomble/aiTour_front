@@ -161,7 +161,7 @@ defineExpose({
 </script>
 
 <template>
-  <div id="instMap" class="h-100" style="width: 100%" />
+  <div id="instMap" class="inst-map" style="width: 100%" />
   <!-- SVG 필터 정의 -->
   <svg width="0" height="0" style="position: absolute;">
     <defs>
@@ -180,6 +180,10 @@ defineExpose({
 </template>
 
 <style lang="scss">
+.inst-map {
+  height: calc(100% - 60px);
+  height: calc(100% - 60px - var(--nav-bar-height));
+}
 .iam {
   position: relative;
   width: 24px;

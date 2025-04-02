@@ -59,9 +59,9 @@ const route = useRoute()
   left: 0;
   width: 100%;
   height: 60px;
-  background-color: rgba(255, 255, 255, 0.3); // Transparent white
-  backdrop-filter: blur(10px); // Blur effect
-  -webkit-backdrop-filter: blur(10px); // For Safari
+  background-color: rgba(255, 255, 255, 0.1); // Transparent white
+  backdrop-filter: blur(4px); // Blur effect
+  -webkit-backdrop-filter: blur(4px); // For Safari
   display: flex;
   justify-content: space-between;
   align-items: center;
