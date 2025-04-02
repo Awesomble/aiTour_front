@@ -59,15 +59,39 @@ const route = useRoute()
   left: 0;
   width: 100%;
   height: 60px;
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.3); // Transparent white
+  backdrop-filter: blur(10px); // Blur effect
+  -webkit-backdrop-filter: blur(10px); // For Safari
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
   border-radius: 20px 20px 0 0;
   z-index: 9;
+  border-top: 1px solid rgba(255, 255, 255, 0.8); // Light border for glass effect
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05); // Subtle shadow
 }
 
+.glass-btn {
+  height: 48px;
+  width: 48px;
+  border-radius: 50%;
+  min-width: unset;
+  padding: 0;
+  background-color: rgba(255, 255, 255, 0.4); // Slightly transparent buttons
+  backdrop-filter: blur(5px); // Button-specific blur
+  -webkit-backdrop-filter: blur(5px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); // Subtle shadow for buttons
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.7); // More opaque on hover
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12); // Enhanced shadow on hover
+  }
+
+  &:active {
+    transform: scale(0.95); // Slight scale effect when pressed
+  }
+}
 .v-btn {
   height: 48px;
   width: 48px;

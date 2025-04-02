@@ -93,15 +93,15 @@ const { clearDirections, findDirections } = useDirections(map)
 
 // 컴포넌트 라이프사이클 훅
 onMounted(async () => {
-  await nextTick()
-  await initGPS()
+  initGPS()
   const mapInstance = await initializeMap()
   if (mapInstance) {
     setupMapEventListeners()
 
     // 초기 카테고리로 장소 불러오기
     fetchPlacesByCategory()
-
+    // 로케이션 설정
+    myLocationCall()
     // 스토어에 저장된 경로 정보가 있다면 로드
     if (mapStore.directions) {
       const { startLat, startLng, destLat, destLng } = mapStore.directions

@@ -46,16 +46,17 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
     return markerLib
   }
 
-  // Optimized updateMarkers function with zoom-based landmark visibility
+  // Enhanced visibility check function
+  const shouldShowMarker = (place: Place, currentZoom: number): boolean => {
+    const minZoomLevel = place.category?.min_zoom_level || 0
+    return currentZoom >= minZoomLevel
+  }
+
   const updateMarkers = async () => {
-    // 마커 업데이트가 이미 진행 중인 경우 스킵
-    if (pendingMarkerUpdates.value) {
-      return
-    }
+    if (pendingMarkerUpdates.value) return
 
     pendingMarkerUpdates.value = true
 
-    // Check if map.value exists (if map is passed as a ref)
     const mapInstance = toRaw(map.value)
     if (!mapInstance || !activePlaces.value?.length) {
       clearAllMarkers()
@@ -64,7 +65,6 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
     }
 
     try {
-      // Ensure marker library is properly loaded
       if (!AdvancedMarkerElement.value) {
         const markerLib = await loadMarkerLibrary()
         AdvancedMarkerElement.value = markerLib.AdvancedMarkerElement
@@ -81,27 +81,22 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
       // 현재 활성화된 장소 ID 업데이트
       currentPlaceIds.value = new Set(activePlaces.value.map((place) => place.place_id))
 
-      // 1. 먼저 제거할 마커 식별 (화면에 더 이상 표시되지 않는 마커)
+      // 1. 제거할 마커 식별
       const markersToRemove: string[] = []
       for (const [placeId, markerObj] of activeMarkers.entries()) {
-        if (!currentPlaceIds.value.has(placeId)) {
+        const place = activePlaces.value.find(p => p.place_id === placeId)
+        if (!place || !shouldShowMarker(place, currentZoom)) {
           markersToRemove.push(placeId)
         }
       }
 
       // 2. 추가/업데이트할 마커 식별
-      const markersToAddOrUpdate: Place[] = []
-      for (const place of activePlaces.value) {
-        if (!place.latitude || !place.longitude || !place.place_id) continue
-
-        const isLandmark = !!place.landmark_url
-        const minZoomLevel = place.category?.min_zoom_level || 0
-        const showMarker = currentZoom >= minZoomLevel
-
-        if (showMarker) {
-          markersToAddOrUpdate.push(place)
-        }
-      }
+      const markersToAddOrUpdate: Place[] = activePlaces.value.filter(place =>
+        place.latitude &&
+        place.longitude &&
+        place.place_id &&
+        shouldShowMarker(place, currentZoom)
+      )
 
       // 3. 일괄 업데이트 함수 - 마커 생성
       const createNewMarkers = async () => {
@@ -114,7 +109,6 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
           }
 
           const isLandmark = !!place.landmark_url
-          // 마커 콘텐츠 생성
           const markerContent = makePlace(place)
 
           try {
@@ -147,12 +141,8 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
           if (!activeMarkers.has(place.place_id)) continue
 
           const markerObj = activeMarkers.get(place.place_id)
-          const minZoomLevel = place.category?.min_zoom_level || 0
 
-          // 확인: 최소 줌 레벨에 맞게 표시 여부 결정
-          markerObj.marker.map = currentZoom >= minZoomLevel ? mapInstance : null
-
-          // 매우 중요: 좌표가 실제로 바뀐 경우에만 위치 업데이트
+          // 위치 업데이트 로직
           const position = {
             lat: parseFloat(place.latitude),
             lng: parseFloat(place.longitude)
@@ -162,8 +152,7 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
           const latDiff = Math.abs(currentPos.lat - position.lat)
           const lngDiff = Math.abs(currentPos.lng - position.lng)
 
-          // 위치 변경이 임계값(미세한 변화는 무시) 이상인 경우에만 업데이트
-          const POSITION_THRESHOLD = 0.0000001 // 매우 작은 값으로 설정
+          const POSITION_THRESHOLD = 0.0000001
 
           if (latDiff > POSITION_THRESHOLD || lngDiff > POSITION_THRESHOLD) {
             markerObj.marker.position = position
@@ -182,15 +171,11 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
         }
       }
 
-      // 마커 업데이트 수행 - 순서가 중요함
-      // 1. 기존 마커 업데이트
+      // 마커 업데이트 수행
       updateExistingMarkers()
-      // 2. 새 마커 생성
       await createNewMarkers()
-      // 3. 제거할 마커 제거
       removeOldMarkers()
 
-      // 상태 업데이트
       markerData.value = [...activePlaces.value]
       emit('markers-updated', markerData.value)
     } catch (err) {
