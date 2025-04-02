@@ -120,7 +120,6 @@ onMounted(() => {
   position: fixed;
   right: 15px;
   bottom: 180px;
-  bottom: calc(180px + var(--nav-bar-height));
   z-index: 99;
   background: linear-gradient(135deg, #1483C2, #2575fc);
   border-radius: 50%;

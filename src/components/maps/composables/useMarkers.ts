@@ -7,7 +7,7 @@ import type { Place, MarkerObject, MapBounds } from '@/types/map'
 // 마커 라이브러리를 미리 로드하기 위한 전역 변수
 let markerLibPromise: any = null
 
-export function useMarkers(map: any, mapInfo: any, emit: any) {
+export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
   // Constants
   const DEFAULT_FETCH_PAGE = 1
   const DEFAULT_FETCH_LIMIT = 50
@@ -122,7 +122,7 @@ export function useMarkers(map: any, mapInfo: any, emit: any) {
               map: mapInstance,
               content: markerContent,
               position,
-              zIndex: isLandmark ? 9999 : 1,
+              zIndex: isLandmark ? 999 : 10,
               collisionBehavior: isLandmark ? 'OPTIONAL_AND_HIDES_LOWER_PRIORITY' : 'REQUIRED'
             })
 
@@ -275,55 +275,57 @@ export function useMarkers(map: any, mapInfo: any, emit: any) {
 
   // 기존 데이터와 새 데이터를 병합하는 함수 개선
   const mergePlaceData = (newPlaces: Place[]): Place[] => {
-    const result: Place[] = [];
-    const existingPlacesMap = new Map<string, Place>();
+    const result: Place[] = []
+    const existingPlacesMap = new Map<string, Place>()
 
     // 기존 데이터를 Map으로 변환하여 빠르게 조회할 수 있도록 함
-    activePlaces.value.forEach(place => {
+    activePlaces.value.forEach((place) => {
       if (place.place_id) {
-        existingPlacesMap.set(place.place_id, place);
+        existingPlacesMap.set(place.place_id, place)
       }
-    });
+    })
 
     // 새 데이터 처리
     for (const newPlace of newPlaces) {
-      if (!newPlace.place_id) continue;
+      if (!newPlace.place_id) continue
 
       // 기존 데이터에 이미 있는 장소인 경우, 위치 정보를 기존 값과 비교
       if (existingPlacesMap.has(newPlace.place_id)) {
-        const existingPlace = existingPlacesMap.get(newPlace.place_id);
+        const existingPlace = existingPlacesMap.get(newPlace.place_id)
 
         // 새 데이터 상에서는 기본적으로 새 데이터로 덮어쓰지만
         // 위치 정보는 변경이 작은 경우 기존 위치를 유지
-        const newLat = parseFloat(newPlace.latitude || '0');
-        const newLng = parseFloat(newPlace.longitude || '0');
-        const existingLat = parseFloat(existingPlace.latitude || '0');
-        const existingLng = parseFloat(existingPlace.longitude || '0');
+        const newLat = parseFloat(newPlace.latitude || '0')
+        const newLng = parseFloat(newPlace.longitude || '0')
+        const existingLat = parseFloat(existingPlace.latitude || '0')
+        const existingLng = parseFloat(existingPlace.longitude || '0')
 
         // 위치 변경이 매우 작은 경우, 기존 위치 유지 (마커 점프 방지)
-        const POSITION_THRESHOLD = 0.0001; // 작은 차이 임계값
+        const POSITION_THRESHOLD = 0.0001 // 작은 차이 임계값
 
-        if (Math.abs(newLat - existingLat) < POSITION_THRESHOLD &&
-          Math.abs(newLng - existingLng) < POSITION_THRESHOLD) {
+        if (
+          Math.abs(newLat - existingLat) < POSITION_THRESHOLD &&
+          Math.abs(newLng - existingLng) < POSITION_THRESHOLD
+        ) {
           // 기존 좌표 유지, 다른 정보는 업데이트
-          newPlace.latitude = existingPlace.latitude;
-          newPlace.longitude = existingPlace.longitude;
+          newPlace.latitude = existingPlace.latitude
+          newPlace.longitude = existingPlace.longitude
         }
 
         // 기존 데이터 맵에서 처리 완료 표시
-        existingPlacesMap.delete(newPlace.place_id);
+        existingPlacesMap.delete(newPlace.place_id)
       }
 
-      result.push(newPlace);
+      result.push(newPlace)
     }
 
     // 새 데이터에 없는 기존 데이터 추가 (필요한 경우)
     // 뷰포트 밖의 마커를 어떻게 처리할지에 따라 이 부분은 조정 가능
     for (const [_, place] of existingPlacesMap) {
-      result.push(place);
+      result.push(place)
     }
 
-    return result;
+    return result
   }
 
   // Fetch places by category with improved error handling and debouncing
@@ -333,14 +335,14 @@ export function useMarkers(map: any, mapInfo: any, emit: any) {
 
     // 이전 요청이 있으면 취소
     if (currentFetchController) {
-      currentFetchController.abort();
+      currentFetchController.abort()
     }
 
     // 새 요청을 위한 컨트롤러 생성
-    currentFetchController = new AbortController();
-    const signal = currentFetchController.signal;
+    currentFetchController = new AbortController()
+    const signal = currentFetchController.signal
 
-    isLoading.value = true;
+    isLoading.value = true
 
     try {
       const currentMapInfo = mapInfo.value
@@ -360,11 +362,11 @@ export function useMarkers(map: any, mapInfo: any, emit: any) {
       }
 
       // 디바운스 시간을 둬서 빠른 연속 호출 방지
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50))
 
       // 이미 취소된 요청인지 확인
       if (signal.aborted) {
-        return;
+        return
       }
 
       // API call with signal
@@ -396,7 +398,7 @@ export function useMarkers(map: any, mapInfo: any, emit: any) {
       }
     } finally {
       if (currentFetchController) {
-        currentFetchController = null;
+        currentFetchController = null
       }
       isLoading.value = false
     }

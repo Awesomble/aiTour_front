@@ -62,37 +62,31 @@ export function useMapInitialization(props: MapProps, emit: any, onMapInfoUpdate
       iamMarker.value = new AdvancedMarkerElement({
         map: mapInstance,
         position: center.value,
-        content: iamMarkerHTML
+        content: iamMarkerHTML,
+        zIndex: 9999
       })
 
       // bearing 값 변경 감지
       watch(() => globalStore.bearing, (newBearing) => {
         updateMarkerDirection(newBearing)
       })
-
-      console.log('++++', mapInstance, center.value)
       return mapInstance
     } catch (err) {
       console.error('Map initialization error:', err)
     }
   }
 
-  // 마커 방향 업데이트 함수
 // 마커 방향 업데이트 함수
   const updateMarkerDirection = (bearing: number | null) => {
     if (!iamMarker.value) return
-
     const markerElement = iamMarker.value.content
     if (!markerElement) return
 
     const directionIndicator = markerElement.querySelector('.direction-indicator')
     if (!directionIndicator) return
-
     if (bearing !== null && bearing !== undefined) {
       // bearing 값이 있으면 방향 표시기 표시 및 회전
       directionIndicator.style.opacity = '1'
-
-      // 회전 적용 - 중심을 기준으로 회전하도록 transform 설정
       // rotate 외에 다른 transform 속성은 유지
       directionIndicator.style.transform = `rotate(${bearing}deg)`;
     } else {
@@ -169,8 +163,6 @@ export function useMapInitialization(props: MapProps, emit: any, onMapInfoUpdate
 
     const newPosition = { lat, lng }
     iamMarker.value.position = newPosition
-
-    // bearing 값에 따라 마커 방향 업데이트
     updateMarkerDirection(bearing)
   }
 

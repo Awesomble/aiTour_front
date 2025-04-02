@@ -85,7 +85,7 @@ const {
   clearAllMarkers,
   removeMarkerByPlaceId,
   fetchPlacesByCategory
-} = useMarkers(map, mapInfo, emit)
+} = useMarkers(map, mapInfo, emit, iamMarker)
 
 // 길찾기 관련 컴포저블 사용
 const { clearDirections, findDirections } = useDirections(map)
@@ -215,7 +215,7 @@ defineExpose({
     border-radius: 50%;
     transform: translate(-50%, -50%);
     animation: pulse-wave 2s ease-out infinite;
-    z-index: 0;
+    z-index: 1;
   }
 
   /* 방향 표시기 - 그라데이션 삼각형 */
@@ -225,12 +225,11 @@ defineExpose({
     left: 0;
     width: 26px;
     height: 36px;
-    transform: translate(-50%, -50%) translateY(-28px); /* 중심에서 위로 이동 */
     transform-origin: center bottom; /* 회전 중심점을 요소 중앙으로 설정 */
-    z-index: 99;
-    opacity: 1;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    background: linear-gradient(to bottom, rgba(0, 122, 255, 0) 0%, rgba(0, 122, 255, 1) 90%);
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: linear-gradient(to bottom, rgba(0, 122, 255, 0) 0%, rgba(0, 122, 255, 0.8) 100%);
     clip-path: polygon(0% 0%, 100% 0%, 50% 100%); /* 삼각형 모양 */
 
     /* 점과 겹치는 부분을 위한 하단 확장 부분 */
