@@ -11,7 +11,7 @@ export function useGPS() {
     const lat = Cookies.get('lat')
     const long = Cookies.get('long')
     const bearing = Cookies.get('bearing')
-
+    // globalStore.setGPS(37.5663, 126.9779, 222)
     if (lat && long) {
       globalStore.setGPS(Number(lat), Number(long), bearing)
     }

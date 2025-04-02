@@ -181,79 +181,82 @@ defineExpose({
 <style lang="scss">
 .iam {
   position: relative;
-  width: 14px;
-  height: 14px;
-  background-color: #1483C2;
+  width: 24px;
+  height: 24px;
+  background-color: #ffffff;
   border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1), 0 3px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   z-index: 10;
-  animation: dot-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
-  /* 가상 요소를 사용한 파동 효과 */
-  &::before, &::after {
+  /* 중앙 푸른색 원 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    background-color: #007AFF; /* 애플 지도의 푸른색 */
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+    z-index: 1;
+  }
+
+  /* 외부 펄스 효과 */
+  &::after {
     content: '';
     position: absolute;
     top: 50%;
     left: 50%;
     width: 100%;
     height: 100%;
+    background-color: rgba(0, 122, 255, 0.15); /* 반투명 푸른색 */
     border-radius: 50%;
-    border: 2px solid #1483C2;
     transform: translate(-50%, -50%);
-    opacity: 0;
+    animation: pulse-wave 2s ease-out infinite;
+    z-index: 0;
   }
 
-  /* 첫 번째 파동 */
-  &::before {
-    animation: ripple-effect 2s 0s cubic-bezier(0, 0.5, 0.5, 1) infinite;
-  }
-
-  /* 두 번째 파동 (지연 시간 적용) */
-  &::after {
-    animation: ripple-effect 2s 0.8s cubic-bezier(0, 0.5, 0.5, 1) infinite;
-  }
-
-  /* 방향 표시기 스타일 */
+  /* 방향 표시기 - 그라데이션 삼각형 */
   .direction-indicator {
     position: absolute;
-    width: 0;
-    height: 0;
-    top: -12px; /* 위치 조정 */
+    top: -28px;
     left: 50%;
-    transform-origin: bottom center; /* 회전 중심점 설정 */
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-bottom: 12px solid #1483C2; /* 삼각형 방향 표시기 */
-    transform: translateX(-50%) rotate(0deg); /* 초기 회전 각도 */
-    transition: transform 0.3s ease; /* 부드러운 회전 효과 */
-    z-index: 11;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    width: 26px;
+    height: 36px;
+    margin-left: -10px; /* 가운데 정렬 */
+    transform-origin: center bottom; /* 회전 중심점을 하단 중앙으로 설정 */
+    z-index: 2;
+    opacity: 0; /* 기본적으로 숨김 상태 */
+    transition: opacity 0.3s ease;
+    background: linear-gradient(to bottom, rgba(0, 122, 255, 0) 0%, rgba(0, 122, 255, 1) 90%);
+    clip-path: polygon(0% 0%, 100% 0%, 50% 100%); /* 삼각형 모양 */
+
+    /* 점과 겹치는 부분을 위한 하단 확장 부분 */
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -6px; /* 삼각형 아래로 확장 */
+      left: 50%;
+      width: 2px;
+      height: 6px;
+      background-color: #007AFF;
+      transform: translateX(-50%);
+    }
   }
 }
 
-/* 핵심 원 펄스 애니메이션 */
-@keyframes dot-pulse {
-  0%, 100% {
-    transform: scale(1);
-    background-color: #1483C2;
-  }
-  50% {
-    transform: scale(1.1);
-    background-color: #1a9cf7;
-  }
-}
-
-/* 파동 애니메이션 */
-@keyframes ripple-effect {
+/* 맥동하는 파란색 파동 효과 */
+@keyframes pulse-wave {
   0% {
-    width: 100%;
-    height: 100%;
-    opacity: 1;
+    width: 40%;
+    height: 40%;
+    opacity: 0.6;
   }
   100% {
-    width: 300%;
-    height: 300%;
+    width: 200%;
+    height: 200%;
     opacity: 0;
   }
 }

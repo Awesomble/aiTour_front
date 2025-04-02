@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import type { MapInfo, MapProps } from '@/types/map'
 import { useGlobalStore } from '@/store'
 
@@ -15,6 +15,7 @@ export function useMapInitialization(props: MapProps, emit: any, onMapInfoUpdate
     lng_min: null,
     lng_max: null
   })
+  const globalStore = useGlobalStore()
 
   const initializeMap = async () => {
     try {
@@ -48,18 +49,55 @@ export function useMapInitialization(props: MapProps, emit: any, onMapInfoUpdate
         updateMapInfo()
         emit('map-loaded', mapInstance)
       })
+
+      // 사용자 위치 마커에 방향 표시기 추가
       const iamMarkerHTML = document.createElement('div')
       iamMarkerHTML.className = 'iam'
+
+      // 방향 표시기 추가
+      const directionIndicator = document.createElement('div')
+      directionIndicator.className = 'direction-indicator'
+      iamMarkerHTML.appendChild(directionIndicator)
 
       iamMarker.value = new AdvancedMarkerElement({
         map: mapInstance,
         position: center.value,
         content: iamMarkerHTML
       })
-console.log('++++', mapInstance, center.value)
+
+      // bearing 값 변경 감지
+      watch(() => globalStore.bearing, (newBearing) => {
+        updateMarkerDirection(newBearing)
+      })
+
+      console.log('++++', mapInstance, center.value)
       return mapInstance
     } catch (err) {
       console.error('Map initialization error:', err)
+    }
+  }
+
+  // 마커 방향 업데이트 함수
+// 마커 방향 업데이트 함수
+  const updateMarkerDirection = (bearing: number | null) => {
+    if (!iamMarker.value) return
+
+    const markerElement = iamMarker.value.content
+    if (!markerElement) return
+
+    const directionIndicator = markerElement.querySelector('.direction-indicator')
+    if (!directionIndicator) return
+
+    if (bearing !== null && bearing !== undefined) {
+      // bearing 값이 있으면 방향 표시기 표시 및 회전
+      directionIndicator.style.opacity = '1'
+
+      // 회전 적용 - 중심을 기준으로 회전하도록 transform 설정
+      // rotate 외에 다른 transform 속성은 유지
+      directionIndicator.style.transform = `rotate(${bearing}deg)`;
+    } else {
+      // bearing 값이 없으면 방향 표시기 숨김
+      directionIndicator.style.opacity = '0'
     }
   }
 
@@ -96,7 +134,6 @@ console.log('++++', mapInstance, center.value)
       if (onMapInfoUpdated) {
         onMapInfoUpdated(mapInfo.value)
       }
-
     }
   }
 
@@ -112,14 +149,29 @@ console.log('++++', mapInstance, center.value)
   }
 
   const myLocationCall = () => {
-    const globalStore = useGlobalStore()
     if (globalStore.lat && globalStore.lng && map.value) {
       center.value = { lat: globalStore.lat, lng: globalStore.lng }
-      // zoom.value = 15
 
-      // map.value.panTo(center.value)
-      // map.value.setZoom(zoom.value)
+      if (iamMarker.value) {
+        iamMarker.value.position = center.value
+      }
+
+      map.value.panTo(center.value)
+
+      // bearing 값에 따라 마커 방향 업데이트
+      updateMarkerDirection(globalStore.bearing)
     }
+  }
+
+  // 위치 업데이트 함수
+  const updateUserLocation = (lat: number, lng: number, bearing: number | null = null) => {
+    if (!map.value || !iamMarker.value) return
+
+    const newPosition = { lat, lng }
+    iamMarker.value.position = newPosition
+
+    // bearing 값에 따라 마커 방향 업데이트
+    updateMarkerDirection(bearing)
   }
 
   return {
@@ -131,6 +183,7 @@ console.log('++++', mapInstance, center.value)
     initializeMap,
     updateMapInfo,
     panToLocation,
-    myLocationCall
+    myLocationCall,
+    updateUserLocation
   }
 }
