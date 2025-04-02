@@ -15,7 +15,6 @@ const useGlobalStore = defineStore('global', () => {
     lat.value = latitude
     lng.value = longitude
     bearing.value = bearingValue !== undefined ? Number(bearingValue) : null
-    console.log(lat.value, lng.value, bearing.value)
   }
 
   return { setNavi, isNavigation, setGPS, lat, lng, bearing }

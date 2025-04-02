@@ -118,9 +118,9 @@ onMounted(() => {
 <style lang="scss">
 .btn-floating {
   position: fixed;
-  right: 20px;
-  bottom: 80px;
-  bottom: calc(80px + var(--nav-bar-height));
+  right: 15px;
+  bottom: 180px;
+  bottom: calc(180px + var(--nav-bar-height));
   z-index: 99;
   background: linear-gradient(135deg, #1483C2, #2575fc);
   border-radius: 50%;

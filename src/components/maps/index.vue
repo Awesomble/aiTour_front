@@ -186,7 +186,7 @@ defineExpose({
   background-color: #ffffff;
   border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  z-index: 10;
+  z-index: 999999;
 
   /* 중앙 푸른색 원 */
   &::before {
@@ -196,7 +196,7 @@ defineExpose({
     left: 50%;
     width: 14px;
     height: 14px;
-    background-color: #007AFF; /* 애플 지도의 푸른색 */
+    background-color: #007AFF;
     border-radius: 50%;
     transform: translate(-50%, -50%);
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
@@ -211,7 +211,7 @@ defineExpose({
     left: 50%;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 122, 255, 0.15); /* 반투명 푸른색 */
+    background-color: rgba(0, 122, 255, 0.15);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     animation: pulse-wave 2s ease-out infinite;
@@ -221,15 +221,15 @@ defineExpose({
   /* 방향 표시기 - 그라데이션 삼각형 */
   .direction-indicator {
     position: absolute;
-    top: -28px;
-    left: 50%;
+    top: -24px;
+    left: 0;
     width: 26px;
     height: 36px;
-    margin-left: -10px; /* 가운데 정렬 */
-    transform-origin: center bottom; /* 회전 중심점을 하단 중앙으로 설정 */
-    z-index: 2;
-    opacity: 0; /* 기본적으로 숨김 상태 */
-    transition: opacity 0.3s ease;
+    transform: translate(-50%, -50%) translateY(-28px); /* 중심에서 위로 이동 */
+    transform-origin: center bottom; /* 회전 중심점을 요소 중앙으로 설정 */
+    z-index: 99;
+    opacity: 1;
+    transition: opacity 0.3s ease, transform 0.3s ease;
     background: linear-gradient(to bottom, rgba(0, 122, 255, 0) 0%, rgba(0, 122, 255, 1) 90%);
     clip-path: polygon(0% 0%, 100% 0%, 50% 100%); /* 삼각형 모양 */
 
@@ -237,7 +237,7 @@ defineExpose({
     &::after {
       content: '';
       position: absolute;
-      bottom: -6px; /* 삼각형 아래로 확장 */
+      bottom: -6px;
       left: 50%;
       width: 2px;
       height: 6px;
