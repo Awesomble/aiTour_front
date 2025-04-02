@@ -4,6 +4,7 @@ import { useUserStore } from '@/store'
 
 const toast = useToast()
 const adminBaseURL = import.meta.env?.VITE_ADMIN_URL
+const appBaseURL = import.meta.env?.VITE_APP_URL
 export const adminInstance = () => {
   const instance = axios.create({
     baseURL: adminBaseURL,
@@ -16,11 +17,10 @@ export const adminInstance = () => {
   })
   instance.interceptors.response.use(response, errorHandler)
   return instance
-
 }
 export const appInstance = () => {
   const instance = axios.create({
-    baseURL: adminBaseURL,
+    baseURL: appBaseURL,
     timeout: 50000,
     withCredentials: true,
     headers: {
@@ -72,4 +72,60 @@ const errorHandler = (error: any) => {
     toast.error('네트워크 에러')
   }
   // return Promise.reject(error)
+}
+
+const CLIENT_ID = import.meta.env?.VITE_NAVER_CLIENT_ID || ''
+const CLIENT_SECRET = import.meta.env?.VITE_NAVER_CLIENT_SECRET || ''
+export const naverInstance = () => {
+  const instance = axios.create({
+    baseURL: 'https://naveropenapi.apigw.ntruss.com/map-direction/v1',
+    timeout: 50000,
+    withCredentials: false, // Naver API doesn't use credentials
+    headers: {
+      'X-NCP-APIGW-API-KEY-ID': CLIENT_ID,
+      'X-NCP-APIGW-API-KEY': CLIENT_SECRET,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    }
+  })
+
+  // 응답 인터셉터 추가 (옵션)
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      // Naver API 오류 처리
+      console.error('Naver API Error:', error.response?.data || error.message)
+      return Promise.reject(error)
+    }
+  )
+
+  return instance
+}
+
+
+export const mapboxInstance = () => {
+  const instance = axios.create({
+    baseURL: 'https://api.mapbox.com/directions/v5',
+    timeout: 50000,
+    withCredentials: false, // Mapbox API doesn't use credentials
+    params: {
+      // 기본 파라미터로 토큰과 형식 지정
+      geometries: 'geojson',
+      steps: 'true',
+      language: 'ko',
+      overview: 'full'
+    }
+  })
+
+  // 응답 인터셉터 추가
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      // Mapbox API 오류 처리
+      console.error('Mapbox API Error:', error.response?.data || error.message)
+      return Promise.reject(error)
+    }
+  )
+
+  return instance
 }

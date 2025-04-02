@@ -20,6 +20,7 @@ const headers = ref<object[]>([
     title: 'ID'
   },
   { key: 'name', align: 'start', title: 'Name' },
+  { key: 'main_category.name', align: 'start', title: 'Group' },
   { key: 'description', align: 'start', title: 'Description' },
   { key: 'action', align: 'end', title: 'Action' }
 ])

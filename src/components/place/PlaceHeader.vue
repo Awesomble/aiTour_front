@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import BtnNavi from '@/components/button/BtnNavi.vue'
 import { useGlobalStore } from '@/store'
 
 const props = defineProps({
@@ -69,7 +68,6 @@ const operatingStatus = computed(() => {
     @mousedown="$emit('mousedown', $event)"
     @touchstart="$emit('touchstart', $event)"
   >
-    <div>
       <!-- Place name -->
       <h1 class="place-name">{{ detail?.name }}</h1>
       <!-- Category with icon -->
@@ -92,17 +90,6 @@ const operatingStatus = computed(() => {
       <span class="hours-icon">🕒</span>
       <span class="hours-text">{{ operatingStatus }}</span>
     </div>
-    </div>
-
-    <BtnNavi
-      :map-type="'google'"
-      :start-lat="globalStore.lat"
-      :start-lng="globalStore.long"
-      :end-lat="props.detail?.latitude"
-      :end-lng="props.detail?.longitude"
-      :transport-mode="'walk'"
-      style="margin-right: 50px;"
-    />
   </div>
 
   <!-- Skeleton loading state -->
@@ -121,17 +108,14 @@ const operatingStatus = computed(() => {
 <style scoped lang="scss">
 /* Place header styling */
 .place-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 0 16px 12px;
+  padding: 4px 16px 12px;
   background-color: white;
 }
 
 .place-name {
   font-size: 18px;
   font-weight: 400;
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   color: #202124;
   white-space: nowrap;
   overflow: hidden;
@@ -142,7 +126,7 @@ const operatingStatus = computed(() => {
 .rating-container {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-size: 14px;
 }
 
@@ -160,7 +144,7 @@ const operatingStatus = computed(() => {
 .category-container {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-size: 14px;
   color: #5f6368;
 }

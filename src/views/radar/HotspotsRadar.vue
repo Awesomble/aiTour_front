@@ -462,7 +462,7 @@ const getRadius = async () => {
   }
   const radius = zoomToRadius[zoomLevel.value]
   try {
-    const res = await getRadiusAPI(globalStore.lat, globalStore.long, radius, 1, 10, [])
+    const res = await getRadiusAPI(globalStore.lat, globalStore.lng, radius, 1, 10, [])
     if (res && res.data) {
       let newSpots
       if (Array.isArray(res.data)) {

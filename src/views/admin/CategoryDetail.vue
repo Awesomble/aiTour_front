@@ -1,16 +1,14 @@
-
-
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { putCategoriesAPI, getCategoriesDetailAPI } from '@/network/admin'
+import { putCategoriesAPI, getCategoriesDetailAPI, getMainCategoriesAPI } from '@/network/admin'
 import { useToast } from 'vue-toastification'
-import router from '@/router'
 
 const route = useRoute()
 const toast = useToast()
 const formRef = ref<HTMLFormElement | null>(null)
-
+const mainCategoryList = ref<object[] | null>(null)
+const iptMainCategory = ref<number | null>(null)
 const categoryName = ref('')
 const categoryDescription = ref('')
 const categoryIcon = ref('')
@@ -30,6 +28,7 @@ const getCategoryDetail = async () => {
     categoryIcon.value = data.icon
     categoryIconColor.value = data.icon_color || '#'
     categoryDefaultUsageTime.value = data.default_usage_time
+    iptMainCategory.value = data.main_category_id
   }
 }
 
@@ -40,18 +39,25 @@ const updateCategory = async () => {
     icon: categoryIcon.value,
     icon_color: categoryIconColor.value,
     default_usage_time: categoryDefaultUsageTime.value,
+    main_category_id: iptMainCategory.value,
   }
   const res = await putCategoriesAPI(String(route.params.id), payload)
   if (res?.status === 200) {
     toast.success("Category updated successfully")
     await getCategoryDetail()
-    router.go(-1)
   } else {
     toast.error("Error updating category")
   }
 }
-
+const getMainCategories = async () => {
+  const res = await getMainCategoriesAPI()
+  if (res?.status === 200) {
+    mainCategoryList.value = res?.data
+  }
+  console.log(mainCategoryList.value)
+}
 onMounted(() => {
+  getMainCategories()
   getCategoryDetail()
 })
 </script>
@@ -64,6 +70,19 @@ onMounted(() => {
             <v-card-text>
               <v-row no-gutters class="ga-2">
                 <p>Default info</p>
+                <v-col v-if="mainCategoryList?.length" cols="12">
+                  <v-autocomplete
+                    v-model="iptMainCategory"
+                    :items="mainCategoryList"
+                    color="blue-grey-lighten-2"
+                    item-title="name"
+                    item-value="main_category_id"
+                    label="Category"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                  />
+                </v-col>
                 <v-col cols="12">
                   <v-text-field
                     v-model="categoryName"

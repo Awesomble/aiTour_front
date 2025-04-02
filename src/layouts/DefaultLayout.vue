@@ -4,7 +4,7 @@ import Bottom from '@/components/common/Bottom.vue'
 import Navigation from '@/components/common/Navigation.vue'
 import PlaceDetail from '@/components/dialogs/PlaceDetail.vue'
 import Inventory from '@/components/dialogs/Inventory.vue'
-import { onMounted, provide } from 'vue'
+import { nextTick, onMounted, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -13,12 +13,13 @@ const router = useRouter()
 // keep-alive 관련 설정 (필요 시 사용)
 provide('keepAliveKey', true)
 
-onMounted(() => {
+onMounted(async () => {
   // 'place' 쿼리 파라미터가 있는 경우 이전 페이지로 돌아갑니다.
   // (예: 상세 페이지에서 뒤로 가기를 위해 사용)
-  if (route.query.place) {
-    router.go(-1)
-  }
+  // await nextTick()
+  // if (route.query.place) {
+  //   router.go(-1)
+  // }
 })
 </script>
 

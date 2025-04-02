@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getPlacesDetailAPI } from '@/network/app'
-import { useGlobalStore } from '@/store'
+import { useGlobalStore, useMapStore } from '@/store'
 import PlaceHeader from '@/components/place/PlaceHeader.vue'
 import PlacePhotos from '@/components/place/PlacePhotos.vue'
 import InfoPanel from '@/components/place/InfoPanel.vue'
 import ChatPanel from '@/components/place/ChatPanel.vue'
+import { Navigation } from 'lucide-vue-next'
 
 const props = defineProps({
   modelValue: {
@@ -25,6 +26,7 @@ const containerRef = ref<HTMLElement | null>(null)
 const contentRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const globalStore = useGlobalStore()
+const mapStore = useMapStore()
 
 // Height states
 const MIN_HEIGHT = 150
@@ -67,10 +69,11 @@ const hasScrollableContent = () => {
 // Watch for route changes to show/hide dialog
 watch(
   () => route.query,
-  (newQuery) => {
+  async (newQuery) => {
     if (newQuery.place) {
       loading.value = true
-      getPlaceDetail()
+      await nextTick()
+      await getPlaceDetail()
       dialog.value = true
       currentHeight.value = MIN_HEIGHT
     } else {
@@ -197,15 +200,11 @@ const onManualDrag = (e: any) => {
     // If we're at max height and content is scrollable
     if (isMaxHeight.value && hasScrollableContent()) {
       const deltaY = clientY - touchStartY.value
-
-      // If scrolled down while at top, or clear drag down motion
       if ((isAtTopScroll() && deltaY > 0) || Math.abs(deltaY) > dragThreshold) {
         if (touchMoveCount <= 3) {
-          // Only interfere early in the gesture
           e.preventDefault() // Prevent browser scroll
         }
       } else {
-        // User is trying to scroll content
         isScrollingContent.value = true
         isDragging.value = false
         return
@@ -261,21 +260,13 @@ const endManualDrag = () => {
 const toggleChatPopup = () => {
   showChatPopup.value = !showChatPopup.value
   if (showChatPopup.value && heightState.value === 'min') {
-    // If opening chat when parent is minimized, expand parent to at least mid height
     currentHeight.value = MID_HEIGHT
   }
 }
 
-// Handle chat height changes (rule #3)
 const handleChatHeightChange = (chatHeight: number) => {
-  // Only react when chat is expanding (rule #3)
-  // Calculate the minimum parent height needed based on chat height
-  // Adding extra space for parent popup header and other elements
   const requiredParentHeight = chatHeight + 120
-
-  // If chat is trying to grow larger than parent allows, expand parent
   if (requiredParentHeight > currentHeight.value) {
-    // Don't exceed maximum height
     currentHeight.value = Math.min(MAX_HEIGHT, requiredParentHeight)
   }
 }
@@ -290,7 +281,9 @@ const closePopup = () => {
     query: query
   })
 }
-
+const findDirectionsCall = async () => {
+  mapStore.setDirections(globalStore.lat, globalStore.lng, detail.value.latitude, detail.value.longitude)
+}
 onMounted(() => {
   currentHeight.value = MIN_HEIGHT
 })
@@ -317,10 +310,13 @@ onBeforeUnmount(() => {
         <div class="drag-indicator"></div>
       </div>
       <!-- Close button -->
-      <button class="close-button" @click="closePopup">
+      <button v-if="false" class="close-button" @click="closePopup">
         <span class="icon">✕</span>
       </button>
-
+      <!-- navigation-->
+      <v-btn color="primary" icon @click="findDirectionsCall" class="btn-navigation" variant="elevated">
+        <Navigation size="20" />
+      </v-btn>
       <!-- Place details content -->
       <PlaceHeader
         :loading="loading"
@@ -415,6 +411,7 @@ onBeforeUnmount(() => {
   pointer-events: auto;
   border-top: 1px solid #eee;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  overscroll-behavior-y: none;
 }
 
 @keyframes slideUp {
@@ -445,9 +442,6 @@ onBeforeUnmount(() => {
 }
 
 .close-button {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   background: #f2f2f2;
   border: none;
   width: 32px;
@@ -459,6 +453,11 @@ onBeforeUnmount(() => {
   cursor: pointer;
   z-index: 10;
   font-size: 16px;
+}
+.btn-navigation {
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 
 .popup-content {

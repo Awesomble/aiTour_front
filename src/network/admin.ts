@@ -52,6 +52,9 @@ export const delPlaceFileAPI = async (place_id: string, photo_id: string) => {
   return instance.delete(`/photos/places/${place_id}/photos/${photo_id}`)
 }
 
+export const getMainCategoriesAPI = async () => {
+  return instance.get(`/categories/main`)
+}
 export const getCategoriesAPI = async () => {
   return instance.get(`/categories`)
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Menu, Bell, Search, ArrowLeft } from 'lucide-vue-next'
+import { Menu, Bell, ArrowLeft } from 'lucide-vue-next'
 import { useGlobalStore } from '@/store'
 
 const route = useRoute()

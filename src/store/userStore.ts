@@ -1,4 +1,3 @@
-// useUserStore.ts 수정안
 import { ref, type Ref } from 'vue'
 import { defineStore } from 'pinia'
 import { BedrockClient } from '@aws-sdk/client-bedrock'

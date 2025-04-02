@@ -29,6 +29,16 @@ export const putMeAPI = async (payload: object) => {
 export const updateThumbnailAPI = async (payload: any) => {
   return instance.post(`/user/me/thumbnail`, payload, { headers: { 'Content-Type': 'multipart/form-data' }})
 }
+export const getMainCategoriesAPI = async () => {
+  return instance.get(`/categories/main-list`)
+}
+
+export const getRouteDirectionsAPI = async (payload: any) => {
+  return instance.post(`/routes/directions`, payload)
+}
+export const getRouteAPI = async (payload: any) => {
+  return instance.post(`/routes/route`, payload)
+}
 
 
 // 채팅 API 함수 추가

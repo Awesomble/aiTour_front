@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { watch, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MainMap from '@/components/maps/MainMap.vue'
-import { Toilet, Camera } from 'lucide-vue-next'
+import MainMap from '@/components/maps/index.vue'
+import { getMainCategoriesAPI } from '@/network/app'
 
 defineOptions({
   name: 'main-map'
@@ -12,14 +12,9 @@ const route = useRoute()
 const router = useRouter()
 const mapComponent = ref(null)
 const mountIdx = ref(1)
+const mainCategoryList = ref<object[] | null>(null)
+const iptMainCategoryList = ref<number[]>([0])
 
-// Category definitions
-const categories = [
-  { id: [], icon: Camera, name: 'Photo Spots' },
-  { id: [], icon: Toilet, name: 'Restrooms' }
-]
-
-// Handle marker click
 const handleMarkerClick = async (placeId: any) => {
   // 현재 쿼리 파라미터에서 place만 제외한 다른 파라미터 유지
   const { place: _, ...restQuery } = route.query
@@ -36,13 +31,26 @@ const handleMarkerClick = async (placeId: any) => {
   }
 }
 
-// Set active category
-const setCategory = (categoryIds: any, idx: any) => {
-  mountIdx.value = idx
-  if (mapComponent.value) {
-    mapComponent.value.setActiveCategory(idx)
+watch(iptMainCategoryList, (newValue, oldValue) => {
+  if (!newValue.length) {
+    iptMainCategoryList.value = [0]
+    return
   }
-}
+  // 조건 2 & 3: 0과 다른 값이 함께 있을 때
+  if (newValue.includes(0) && newValue.some(val => val !== 0)) {
+    // 0이 새로 추가되었는지 확인
+    const zeroJustAdded = !oldValue.includes(0) && newValue.includes(0)
+    if (zeroJustAdded) {
+      // 조건 3: 0이 추가되었으면 [0]으로 설정
+      iptMainCategoryList.value = [0]
+    } else {
+      // 조건 2: 0이 있는 상태에서 다른 값이 추가되었으면 0 제거
+      iptMainCategoryList.value = newValue.filter(val => val !== 0)
+    }
+    return
+  }
+  console.log(iptMainCategoryList.value)
+}, { deep: true })
 
 // Navigate to user's location
 const goToMyLocation = () => {
@@ -50,6 +58,15 @@ const goToMyLocation = () => {
     mapComponent.value.myLocationCall()
   }
 }
+const getMainCategories = async () => {
+  const res = await getMainCategoriesAPI()
+  if (res?.status === 200) {
+    mainCategoryList.value = res?.data
+  }
+}
+onMounted(() => {
+  getMainCategories()
+})
 </script>
 
 <template>
@@ -58,27 +75,35 @@ const goToMyLocation = () => {
       ref="mapComponent"
       :initial-center="{ lat: 37.5663, lng: 126.9779 }"
       :initial-zoom="16"
-      :categories="categories[mountIdx]?.id || []"
+      :categories="[]"
       :active-category="mountIdx"
       @marker-click="handleMarkerClick"
     >
       <template #floating-controls>
         <!-- Category selector buttons -->
-        <div class="mounter">
-          <ul>
-            <li v-for="(category, idx) in categories" :key="idx">
-              <v-btn
-                :color="mountIdx === idx ? 'primary' : 'white'"
-                @click="setCategory(category.id, idx)"
-                icon
-              >
-                <component :is="category.icon" :stroke-width="1" />
-              </v-btn>
-            </li>
-          </ul>
-        </div>
+        <v-chip-group
+          v-if="mainCategoryList?.length"
+          v-model="iptMainCategoryList"
+          multiple
+          class="cate-box"
 
-        <!-- My location button -->
+        >
+          <v-chip
+            text="🔥 Hot"
+            :value="0"
+            variant="flat"
+            color="white"
+            class="custom-chip"
+          />
+          <v-chip
+            v-for="(cate, idx) in mainCategoryList"
+            :key="cate.main_category_id"
+            :value="idx + 1"
+            :text="`${cate.icon} ${cate.name}`"
+            variant="flat"
+            class="custom-chip"
+          />
+        </v-chip-group>
         <v-btn
           class="btn-floating"
           icon="mdi-image-filter-center-focus"
@@ -91,39 +116,71 @@ const goToMyLocation = () => {
 </template>
 
 <style lang="scss">
-.mounter {
-  position: fixed;
-  right: 20px;
-  bottom: 140px;
-  z-index: 99;
-  ul {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    padding: 10px 0 8px;
-    gap: 10px;
-    li {
-      a {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 50px;
-        height: 50px;
-        border: 4px solid #1483c2;
-        border-radius: 50px;
-        background-color: #fff;
-        color: #000;
-        font-size: 14px;
-      }
-    }
-  }
-}
-
 .btn-floating {
   position: fixed;
   right: 20px;
   bottom: 80px;
+  bottom: calc(80px + var(--nav-bar-height));
   z-index: 99;
+  background: linear-gradient(135deg, #1483C2, #2575fc);
+  border-radius: 50%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-floating.active {
+  animation: heartbeat .6s infinite;
+}
+
+@keyframes heartbeat {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+.cate-box {
+  position: absolute;
+  left: 0;
+  top: 30px;
+  top: calc(30px + var(--status-bar-height));
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  white-space: nowrap;
+  overflow-x: auto;
+  padding: 10px;
+  scrollbar-width: none; /* Firefox에서 스크롤바 숨김 */
+}
+
+.cate-box::-webkit-scrollbar {
+  display: none; /* Chrome, Safari에서 스크롤바 숨김 */
+}
+
+.custom-chip {
+  background-color: rgba(255, 255, 255, 0.3) !important; /* 반투명 배경 */
+  backdrop-filter: blur(8px); /* 블러 효과 */
+  -webkit-backdrop-filter: blur(8px); /* Safari 지원 */
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 9999px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.1s ease;
+  color: #222 !important; /* 텍스트 색상 진하게 */
+  font-weight: 500; /* 텍스트 약간 두껍게 */
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.5); /* 텍스트 가독성 향상 */
+}
+
+.custom-chip.v-chip--selected {
+  background-color: rgba(25, 118, 210, 0.75) !important; /* 액티브 시 색상 */
+  color: white !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.9);
 }
 </style>
