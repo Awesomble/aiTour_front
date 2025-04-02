@@ -31,26 +31,34 @@ const handleMarkerClick = async (placeId: any) => {
   }
 }
 
-watch(iptMainCategoryList, (newValue, oldValue) => {
-  if (!newValue.length) {
-    iptMainCategoryList.value = [0]
-    return
-  }
-  // 조건 2 & 3: 0과 다른 값이 함께 있을 때
-  if (newValue.includes(0) && newValue.some(val => val !== 0)) {
-    // 0이 새로 추가되었는지 확인
-    const zeroJustAdded = !oldValue.includes(0) && newValue.includes(0)
-    if (zeroJustAdded) {
-      // 조건 3: 0이 추가되었으면 [0]으로 설정
+watch(
+  iptMainCategoryList,
+  (newValue, oldValue) => {
+    if (!newValue.length) {
       iptMainCategoryList.value = [0]
-    } else {
-      // 조건 2: 0이 있는 상태에서 다른 값이 추가되었으면 0 제거
-      iptMainCategoryList.value = newValue.filter(val => val !== 0)
+      return
     }
-    return
-  }
-  console.log(iptMainCategoryList.value)
-}, { deep: true })
+    // 조건 2 & 3: 0과 다른 값이 함께 있을 때
+    if (newValue.includes(0) && newValue.some((val) => val !== 0)) {
+      // 0이 새로 추가되었는지 확인
+      const zeroJustAdded = !oldValue.includes(0) && newValue.includes(0)
+      if (zeroJustAdded) {
+        // 조건 3: 0이 추가되었으면 [0]으로 설정
+        iptMainCategoryList.value = [0]
+        try {
+          window.AndroidInterface.vibrate(3)
+        } catch (err: any) {}
+      } else {
+        try {
+          window.AndroidInterface.vibratePattern('success')
+        } catch (err: any) {}
+        iptMainCategoryList.value = newValue.filter((val) => val !== 0)
+      }
+      return
+    }
+  },
+  { deep: true }
+)
 
 // Navigate to user's location
 const goToMyLocation = () => {
@@ -70,7 +78,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-container class="pa-0 h-100 w-100" style="max-width: 100%; position: relative;">
+  <v-container class="pa-0 h-100 w-100" style="max-width: 100%; position: relative">
     <MainMap
       ref="mapComponent"
       :initial-center="{ lat: 37.5663, lng: 126.9779 }"
@@ -86,15 +94,8 @@ onMounted(() => {
           v-model="iptMainCategoryList"
           multiple
           class="cate-box"
-
         >
-          <v-chip
-            text="🔥 Hot"
-            :value="0"
-            variant="flat"
-            color="white"
-            class="custom-chip"
-          />
+          <v-chip text="🔥 Hot" :value="0" variant="flat" color="white" class="custom-chip" />
           <v-chip
             v-for="(cate, idx) in mainCategoryList"
             :key="cate.main_category_id"
@@ -121,14 +122,16 @@ onMounted(() => {
   right: 15px;
   bottom: 180px;
   z-index: 99;
-  background: linear-gradient(135deg, #1483C2, #2575fc);
+  background: linear-gradient(135deg, #1483c2, #2575fc);
   border-radius: 50%;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .btn-floating.active {
-  animation: heartbeat .6s infinite;
+  animation: heartbeat 0.6s infinite;
 }
 
 @keyframes heartbeat {
