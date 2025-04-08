@@ -78,3 +78,11 @@ export const openMapToDestination = (
     return false
   }
 }
+
+export const formatDistance = (meters: number): string => {
+  if (meters >= 1000) {
+    return Math.floor(meters / 1000) + 'km'
+  } else {
+    return Math.floor(meters) + 'm'
+  }
+}

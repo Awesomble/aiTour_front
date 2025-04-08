@@ -1,204 +1,203 @@
-import { ref, toRaw, onMounted } from 'vue'
+import { ref, toRaw, onMounted, onBeforeUnmount } from 'vue'
 import { getPlacesListAPI } from '@/network/app'
-import { shouldRefetchMarkers } from '../utils/mapHelpers'
 import { createLighterColor } from '../utils/mapHelpers'
 import type { Place, MarkerObject, MapBounds } from '@/types/map'
 
 // 마커 라이브러리를 미리 로드하기 위한 전역 변수
 let markerLibPromise: any = null
 
-export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
-  // Constants
+/**
+ * 지도 마커 관리를 위한 컴포저블 함수
+ * 장소 데이터를 받아 지도에 마커를 표시하고 관리하는 기능을 제공합니다.
+ */
+export function useMarkers(map: any, mapInfo: any, emit: any) {
+  // 상수 정의
   const DEFAULT_FETCH_PAGE = 1
   const DEFAULT_FETCH_LIMIT = 50
+  const DEBOUNCE_DELAY = 250 // API 요청 디바운스 딜레이(ms)
 
-  // State
+  // 상태 관리
   const isLoading = ref<boolean>(false)
   const activePlaces = ref<Place[]>([])
   const markerData = ref<Place[]>([])
   const lastFetchedMapInfo = ref<MapBounds | null>(null)
   const activeMarkers: Map<string, MarkerObject> = new Map()
-  const AdvancedMarkerElement = ref(null)
+  const AdvancedMarkerElement = ref<any>(null)
   const pendingMarkerUpdates = ref<boolean>(false)
+  const activeMarkerId = ref<string | null>(null) // 활성화된 마커 ID 추적
 
-  // 마커 ID 추적을 위한 Set 추가
-  const currentPlaceIds = ref<Set<string>>(new Set())
-
-  // 이전 API 요청을 취소하기 위한 변수
+  // API 요청 취소 컨트롤러
   let currentFetchController: AbortController | null = null
+  // 디바운스 타이머
+  let debounceTimer: number | null = null
 
-  // 마커 라이브러리 미리 로드 (컴포넌트 마운트 시)
-  onMounted(async () => {
-    try {
-      await loadMarkerLibrary()
-    } catch (err) {
-      console.error('Failed to preload marker library:', err)
-    }
-  })
-
-  // 마커 라이브러리 로딩 함수
-  const loadMarkerLibrary = async () => {
+  /**
+   * Google Maps 마커 라이브러리를 로드하는 함수
+   * 마커 라이브러리는 한 번만 로드하고 캐시합니다.
+   */
+  const loadMarkerLibrary = async (): Promise<any> => {
     if (!markerLibPromise) {
-      markerLibPromise = google.maps.importLibrary('marker')
+      markerLibPromise = window.google.maps.importLibrary('marker')
     }
-    const markerLib = await markerLibPromise
-    AdvancedMarkerElement.value = markerLib.AdvancedMarkerElement
-    return markerLib
+    try {
+      const markerLib = await markerLibPromise
+      AdvancedMarkerElement.value = markerLib.AdvancedMarkerElement
+      return markerLib
+    } catch (err) {
+      console.error('마커 라이브러리 로드 실패:', err)
+      throw err
+    }
   }
 
-  // Enhanced visibility check function
+  /**
+   * 활성화 스타일 적용 함수
+   * 마커에 활성화 스타일을 적용합니다.
+   */
+  const applyActiveStyle = (placeId: string): void => {
+    const markerObj = activeMarkers.get(placeId)
+    if (!markerObj) return
+
+    const element = markerObj.marker.content
+    if (element) {
+      element.classList.add('active')
+
+      // pin 마커인 경우 내부 요소도 스타일 변경
+      if (element.classList.contains('pin')) {
+        const innerCircle = element.querySelector('.pin-inner-circle')
+        if (innerCircle) {
+          innerCircle.classList.add('active-inner-circle')
+        }
+      }
+    }
+  }
+
+  /**
+   * 활성화 스타일 제거 함수
+   * 마커의 활성화 스타일을 제거합니다.
+   */
+  const removeActiveStyle = (placeId: string): void => {
+    const markerObj = activeMarkers.get(placeId)
+    if (!markerObj) return
+
+    const element = markerObj.marker.content
+    if (element) {
+      element.classList.remove('active')
+
+      if (element.classList.contains('pin')) {
+        const innerCircle = element.querySelector('.pin-inner-circle')
+        if (innerCircle) {
+          innerCircle.classList.remove('active-inner-circle')
+        }
+      }
+    }
+  }
+
+  /**
+   * 마커 표시 여부를 결정하는 함수
+   * 카테고리별 최소 줌 레벨에 따라 마커 표시 여부를 결정합니다.
+   */
   const shouldShowMarker = (place: Place, currentZoom: number): boolean => {
+    if (!place || !place.category) return false
     const minZoomLevel = place.category?.min_zoom_level || 0
     return currentZoom >= minZoomLevel
   }
 
-  const updateMarkers = async () => {
+  /**
+   * 마커 업데이트 함수
+   * 현재 지도에 표시해야 할 마커를 업데이트합니다.
+   * 기존 마커는 유지하고 새로운 마커만 추가합니다.
+   */
+  const updateMarkers = async (): Promise<void> => {
     if (pendingMarkerUpdates.value) return
-
     pendingMarkerUpdates.value = true
-
     const mapInstance = toRaw(map.value)
-    if (!mapInstance || !activePlaces.value?.length) {
-      clearAllMarkers()
+
+    if (!mapInstance) {
       pendingMarkerUpdates.value = false
       return
     }
 
     try {
       if (!AdvancedMarkerElement.value) {
-        const markerLib = await loadMarkerLibrary()
-        AdvancedMarkerElement.value = markerLib.AdvancedMarkerElement
+        await loadMarkerLibrary()
       }
-
       if (!AdvancedMarkerElement.value) {
-        console.error('Failed to load AdvancedMarkerElement')
+        console.error('AdvancedMarkerElement 로드 실패')
         pendingMarkerUpdates.value = false
         return
       }
 
       const currentZoom = mapInstance.getZoom()
 
-      // 현재 활성화된 장소 ID 업데이트
-      currentPlaceIds.value = new Set(activePlaces.value.map((place) => place.place_id))
-
-      // 1. 제거할 마커 식별
-      const markersToRemove: string[] = []
-      for (const [placeId, markerObj] of activeMarkers.entries()) {
-        const place = activePlaces.value.find(p => p.place_id === placeId)
-        if (!place || !shouldShowMarker(place, currentZoom)) {
-          markersToRemove.push(placeId)
-        }
-      }
-
-      // 2. 추가/업데이트할 마커 식별
-      const markersToAddOrUpdate: Place[] = activePlaces.value.filter(place =>
-        place.latitude &&
-        place.longitude &&
-        place.place_id &&
-        shouldShowMarker(place, currentZoom)
-      )
-
-      // 3. 일괄 업데이트 함수 - 마커 생성
-      const createNewMarkers = async () => {
-        for (const place of markersToAddOrUpdate) {
-          if (activeMarkers.has(place.place_id)) continue
-
-          const position = {
-            lat: parseFloat(place.latitude),
-            lng: parseFloat(place.longitude)
-          }
-
-          const isLandmark = !!place.landmark_url
-          const markerContent = makePlace(place)
-
-          try {
-            const marker = new AdvancedMarkerElement.value({
-              map: mapInstance,
-              content: markerContent,
-              position,
-              zIndex: isLandmark ? 999 : 10,
-              collisionBehavior: isLandmark ? 'OPTIONAL_AND_HIDES_LOWER_PRIORITY' : 'REQUIRED'
-            })
-
-            marker.addListener('click', () => {
-              handleMarkerClick(place.place_id)
-            })
-
-            activeMarkers.set(place.place_id, {
-              marker,
-              placeId: place.place_id,
-              categoryId: place.category?.category_id
-            })
-          } catch (err) {
-            console.error('Error creating advanced marker:', err)
+      // 3. 새 데이터에만 있는 마커 생성 및 추가
+      activePlaces.value.forEach((place) => {
+        if (place.latitude && place.longitude && place.place_id) {
+          if (!activeMarkers.has(place.place_id)) {
+            const position = {
+              lat: parseFloat(String(place.latitude)),
+              lng: parseFloat(String(place.longitude))
+            }
+            const isLandmark = !!place.landmark_url
+            const markerContent = makePlace(place)
+            try {
+              const marker = new AdvancedMarkerElement.value({
+                map: null, // 처음에는 맵에 표시하지 않음, 가시성은 updateMarkerVisibility에서 처리
+                content: markerContent,
+                position,
+                zIndex: isLandmark ? 999 : 10,
+                collisionBehavior: isLandmark ? 'OPTIONAL_AND_HIDES_LOWER_PRIORITY' : 'REQUIRED'
+              })
+              marker.addListener('click', () => {
+                handleMarkerClick(place.place_id)
+              })
+              activeMarkers.set(place.place_id, {
+                marker,
+                placeId: place.place_id,
+                categoryId: place.category?.category_id
+              })
+            } catch (err) {
+              console.error(`고급 마커 생성 오류 (${place.place_id}):`, err)
+            }
           }
         }
+      })
+
+      // 줌 레벨에 따른 마커 가시성 업데이트
+      updateMarkerVisibility(currentZoom)
+
+      // 활성 마커 스타일 재적용 (예: 클릭 상태 유지)
+      if (activeMarkerId.value && activeMarkers.has(activeMarkerId.value)) {
+        applyActiveStyle(activeMarkerId.value)
       }
-
-      // 4. 일괄 업데이트 함수 - 기존 마커 업데이트
-      const updateExistingMarkers = () => {
-        for (const place of markersToAddOrUpdate) {
-          if (!activeMarkers.has(place.place_id)) continue
-
-          const markerObj = activeMarkers.get(place.place_id)
-
-          // 위치 업데이트 로직
-          const position = {
-            lat: parseFloat(place.latitude),
-            lng: parseFloat(place.longitude)
-          }
-
-          const currentPos = markerObj.marker.position
-          const latDiff = Math.abs(currentPos.lat - position.lat)
-          const lngDiff = Math.abs(currentPos.lng - position.lng)
-
-          const POSITION_THRESHOLD = 0.0000001
-
-          if (latDiff > POSITION_THRESHOLD || lngDiff > POSITION_THRESHOLD) {
-            markerObj.marker.position = position
-          }
-        }
-      }
-
-      // 5. 일괄 업데이트 함수 - 마커 제거
-      const removeOldMarkers = () => {
-        for (const placeId of markersToRemove) {
-          if (activeMarkers.has(placeId)) {
-            const markerObj = activeMarkers.get(placeId)
-            markerObj.marker.map = null
-            activeMarkers.delete(placeId)
-          }
-        }
-      }
-
-      // 마커 업데이트 수행
-      updateExistingMarkers()
-      await createNewMarkers()
-      removeOldMarkers()
 
       markerData.value = [...activePlaces.value]
       emit('markers-updated', markerData.value)
     } catch (err) {
-      console.error('Error updating markers:', err)
+      console.error('마커 업데이트 오류:', err)
     } finally {
       pendingMarkerUpdates.value = false
     }
   }
 
-  // Helper function to create marker content
-  const makePlace = (item: Place) => {
+  /**
+   * 마커 콘텐츠 생성 함수
+   * 장소 정보를 기반으로 마커 DOM 요소를 생성합니다.
+   */
+  const makePlace = (item: Place): HTMLElement => {
     const content = document.createElement('div')
 
     if (item.landmark_url) {
-      // Landmark marker
+      // 랜드마크 마커 생성
       content.classList.add('landmark-marker')
       const img = document.createElement('img')
       img.src = item.landmark_url
-      img.alt = item.name || 'Place'
+      img.alt = item.name || '장소'
       img.classList.add('landmark-image')
+      img.loading = 'lazy' // 이미지 지연 로딩 추가
 
       content.appendChild(img)
     } else {
+      // 일반 마커 생성
       content.classList.add('pin')
       content.setAttribute('data-category', item.category?.category_id?.toString() || '0')
 
@@ -223,171 +222,186 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
     return content
   }
 
-  // Marker click handler
-  const handleMarkerClick = (id: string) => {
+  /**
+   * 마커 클릭 핸들러
+   * 마커 클릭 시 이벤트를 상위 컴포넌트로 전달합니다.
+   */
+  const handleMarkerClick = (id: string): void => {
+    // 이전 활성화 마커 스타일 제거
+    if (activeMarkerId.value && activeMarkerId.value !== id) {
+      removeActiveStyle(activeMarkerId.value)
+    }
+
+    // 새 마커 활성화
+    activeMarkerId.value = id
+    applyActiveStyle(id)
+
     emit('marker-click', id)
   }
 
-  // Update marker visibility based on zoom level
-  const updateMarkerVisibility = (currentZoom: number) => {
-    activeMarkers.forEach((markerObj, placeId) => {
-      const place = activePlaces.value.find((p) => p.place_id === placeId)
-      if (place && place.category && 'min_zoom_level' in place.category) {
-        const minZoom = place.category.min_zoom_level || 0
-        markerObj.marker.map = currentZoom >= minZoom ? map.value : null
-      }
-    })
+  /**
+   * 외부에서 마커 활성화 설정 함수
+   * 외부에서 마커의 활성화 상태를 제어할 수 있습니다.
+   */
+  const setActiveMarker = (placeId: string | null): void => {
+    if (activeMarkerId.value) {
+      removeActiveStyle(activeMarkerId.value)
+    }
+
+    if (placeId && activeMarkers.has(placeId)) {
+      activeMarkerId.value = placeId
+      applyActiveStyle(placeId)
+    } else {
+      activeMarkerId.value = null
+    }
   }
 
-  // Clear all markers from the map
-  const clearAllMarkers = () => {
+  /**
+   * 모든 마커 제거 함수
+   * 지도에서 모든 마커를 제거하고 마커 컬렉션을 초기화합니다.
+   */
+  const clearAllMarkers = (): void => {
     activeMarkers.forEach((markerObj) => {
       markerObj.marker.map = null
     })
     activeMarkers.clear()
-    currentPlaceIds.value.clear()
+    activeMarkerId.value = null // 활성화 마커 상태도 초기화
   }
 
-  // Remove specific marker
-  const removeMarkerByPlaceId = (placeId: string) => {
+  /**
+   * 특정 마커 제거 함수
+   * 지정된 ID의 마커를 지도에서 제거합니다.
+   */
+  const removeMarkerByPlaceId = (placeId: string): void => {
+    if (placeId === activeMarkerId.value) {
+      activeMarkerId.value = null // 활성화된 마커가 제거되면 상태 초기화
+    }
+
     if (activeMarkers.has(placeId)) {
       const markerObj = activeMarkers.get(placeId)
-      markerObj.marker.map = null
+      if (markerObj) markerObj.marker.map = null
       activeMarkers.delete(placeId)
-      currentPlaceIds.value.delete(placeId)
     }
   }
 
-  // 기존 데이터와 새 데이터를 병합하는 함수 개선
-  const mergePlaceData = (newPlaces: Place[]): Place[] => {
-    const result: Place[] = []
-    const existingPlacesMap = new Map<string, Place>()
+  /**
+   * 카테고리별 장소 데이터 가져오기
+   * 현재 지도 범위 내의 장소 데이터를 API로 요청합니다.
+   */
+  const fetchPlacesByCategory = async (): Promise<void> => {
+    if (isLoading.value || !map.value) return
 
-    // 기존 데이터를 Map으로 변환하여 빠르게 조회할 수 있도록 함
-    activePlaces.value.forEach((place) => {
-      if (place.place_id) {
-        existingPlacesMap.set(place.place_id, place)
+    // 이전 디바운스 타이머 취소
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer)
+    }
+
+    // 디바운스 적용
+    debounceTimer = window.setTimeout(async () => {
+      const categoryIds: number[] = []
+
+      // 이전 요청이 있으면 취소
+      if (currentFetchController) {
+        currentFetchController.abort()
       }
-    })
 
-    // 새 데이터 처리
-    for (const newPlace of newPlaces) {
-      if (!newPlace.place_id) continue
+      // 새 요청을 위한 컨트롤러 생성
+      currentFetchController = new AbortController()
+      const signal = currentFetchController.signal
 
-      // 기존 데이터에 이미 있는 장소인 경우, 위치 정보를 기존 값과 비교
-      if (existingPlacesMap.has(newPlace.place_id)) {
-        const existingPlace = existingPlacesMap.get(newPlace.place_id)
+      isLoading.value = true
 
-        // 새 데이터 상에서는 기본적으로 새 데이터로 덮어쓰지만
-        // 위치 정보는 변경이 작은 경우 기존 위치를 유지
-        const newLat = parseFloat(newPlace.latitude || '0')
-        const newLng = parseFloat(newPlace.longitude || '0')
-        const existingLat = parseFloat(existingPlace.latitude || '0')
-        const existingLng = parseFloat(existingPlace.longitude || '0')
+      try {
+        const currentMapInfo = mapInfo.value
 
-        // 위치 변경이 매우 작은 경우, 기존 위치 유지 (마커 점프 방지)
-        const POSITION_THRESHOLD = 0.0001 // 작은 차이 임계값
+        // 디버깅: 현재 지도 정보 출력
+        console.log('API 요청 지도 정보:', {
+          lat_min: currentMapInfo.lat_min,
+          lat_max: currentMapInfo.lat_max,
+          lng_min: currentMapInfo.lng_min,
+          lng_max: currentMapInfo.lng_max
+        })
 
+        // 지도 경계 확인
         if (
-          Math.abs(newLat - existingLat) < POSITION_THRESHOLD &&
-          Math.abs(newLng - existingLng) < POSITION_THRESHOLD
+          !currentMapInfo.lat_min ||
+          !currentMapInfo.lat_max ||
+          !currentMapInfo.lng_min ||
+          !currentMapInfo.lng_max
         ) {
-          // 기존 좌표 유지, 다른 정보는 업데이트
-          newPlace.latitude = existingPlace.latitude
-          newPlace.longitude = existingPlace.longitude
+          console.warn('지도 경계가 정의되지 않았습니다')
+          isLoading.value = false
+          return
         }
 
-        // 기존 데이터 맵에서 처리 완료 표시
-        existingPlacesMap.delete(newPlace.place_id)
+        // 이미 취소된 요청인지 확인
+        if (signal.aborted) {
+          return
+        }
+
+        // API 호출
+        const res = await getPlacesListAPI(
+          DEFAULT_FETCH_PAGE,
+          DEFAULT_FETCH_LIMIT,
+          categoryIds,
+          currentMapInfo.lat_min,
+          currentMapInfo.lat_max,
+          currentMapInfo.lng_min,
+          currentMapInfo.lng_max
+          // { signal }
+        )
+
+        if (res?.status === 200) {
+          // 디버깅: API 응답 경계 출력
+          console.log('API 응답 map_bounds:', res.data?.map_bounds)
+
+          // 새 데이터로 교체 (병합하지 않음)
+          activePlaces.value = res.data?.items || []
+
+          // 마커 업데이트
+          updateMarkers()
+
+          lastFetchedMapInfo.value = { ...currentMapInfo }
+        }
+      } catch (err: any) {
+        // AbortError는 정상적인 취소이므로 에러 로그 출력하지 않음
+        if (err.name !== 'AbortError') {
+          console.error('장소 데이터 가져오기 오류:', err)
+        }
+      } finally {
+        currentFetchController = null
+        isLoading.value = false
       }
-
-      result.push(newPlace)
-    }
-
-    // 새 데이터에 없는 기존 데이터 추가 (필요한 경우)
-    // 뷰포트 밖의 마커를 어떻게 처리할지에 따라 이 부분은 조정 가능
-    for (const [_, place] of existingPlacesMap) {
-      result.push(place)
-    }
-
-    return result
+    }, DEBOUNCE_DELAY)
   }
 
-  // Fetch places by category with improved error handling and debouncing
-  const fetchPlacesByCategory = async () => {
-    if (isLoading.value || !map.value) return
-    const categoryIds: number[] = []
+  /**
+   * 줌 레벨에 따른 마커 가시성 업데이트
+   * Google 샘플과 동일한 방식으로 줌 레벨에 따라 마커 표시 여부를 설정합니다.
+   */
+  const updateMarkerVisibility = (currentZoom: number): void => {
+    if (!map.value) return
+    const mapInstance = toRaw(map.value)
+    activeMarkers.forEach((markerObj, placeId) => {
+      const place = activePlaces.value.find((p) => p.place_id === placeId)
+      if (place) {
+        // 구글 샘플 코드와 동일한 방식으로 map 속성을 직접 설정
+        markerObj.marker.map = shouldShowMarker(place, currentZoom) ? mapInstance : null
+      }
+    })
+  }
 
-    // 이전 요청이 있으면 취소
+  // 컴포넌트 언마운트 시 정리
+  onBeforeUnmount(() => {
+    clearAllMarkers()
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer)
+    }
     if (currentFetchController) {
       currentFetchController.abort()
+      currentFetchController = null
     }
-
-    // 새 요청을 위한 컨트롤러 생성
-    currentFetchController = new AbortController()
-    const signal = currentFetchController.signal
-
-    isLoading.value = true
-
-    try {
-      const currentMapInfo = mapInfo.value
-      if (!shouldRefetchMarkers(currentMapInfo, lastFetchedMapInfo.value)) {
-        isLoading.value = false
-        return
-      }
-
-      if (
-        !currentMapInfo.lat_min ||
-        !currentMapInfo.lat_max ||
-        !currentMapInfo.lng_min ||
-        !currentMapInfo.lng_max
-      ) {
-        isLoading.value = false
-        return
-      }
-
-      // 디바운스 시간을 둬서 빠른 연속 호출 방지
-      await new Promise((resolve) => setTimeout(resolve, 50))
-
-      // 이미 취소된 요청인지 확인
-      if (signal.aborted) {
-        return
-      }
-
-      // API call with signal
-      const res = await getPlacesListAPI(
-        DEFAULT_FETCH_PAGE,
-        DEFAULT_FETCH_LIMIT,
-        categoryIds,
-        currentMapInfo.lat_min,
-        currentMapInfo.lat_max,
-        currentMapInfo.lng_min,
-        currentMapInfo.lng_max,
-        signal // 취소 시그널 전달 (API 함수가 지원해야 함)
-      )
-
-      if (res?.status === 200) {
-        const newPlaces = res.data?.items || []
-
-        // 새 데이터를 기존 마커 유지하면서 업데이트
-        activePlaces.value = mergePlaceData(newPlaces)
-
-        // 마커 업데이트
-        updateMarkers()
-        lastFetchedMapInfo.value = { ...currentMapInfo }
-      }
-    } catch (err) {
-      // AbortError는 정상적인 취소이므로 에러 로그 출력하지 않음
-      if (err.name !== 'AbortError') {
-        console.error('Error fetching places:', err)
-      }
-    } finally {
-      if (currentFetchController) {
-        currentFetchController = null
-      }
-      isLoading.value = false
-    }
-  }
+  })
 
   return {
     isLoading,
@@ -397,6 +411,10 @@ export function useMarkers(map: any, mapInfo: any, emit: any, iamMarker: any) {
     updateMarkerVisibility,
     clearAllMarkers,
     removeMarkerByPlaceId,
-    fetchPlacesByCategory
+    fetchPlacesByCategory,
+    setActiveMarker,
+    activeMarkerId,
+    // 마커 라이브러리 사전 로드 함수 추가 내보내기
+    loadMarkerLibrary
   }
 }

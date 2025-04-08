@@ -41,7 +41,7 @@ export const createLighterColor = (hexColor: string): string => {
 /**
  * 이동 모드에 따른 폴리라인 색상 매핑
  */
-export const routeColorMapping = {
+export const routeColorMapping:  Record<string, string> = {
   'walking': '#4285F4',  // 녹색
   'cycling': '#FF9800',  // 주황색
   'driving': '#4CAF50'   // 파란색
@@ -50,7 +50,7 @@ export const routeColorMapping = {
 /**
  * 이동 모드 영어-한글 변환
  */
-export const travelModeText = {
+export const travelModeText: Record<string, string> = {
   'walking': '도보',
   'cycling': '자전거',
   'driving': '자동차'

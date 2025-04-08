@@ -50,11 +50,11 @@ export function useDirections(map: any) {
 
     try {
       // 경로 좌표를 포함하는 바운드 생성
-      const bounds = new google.maps.LatLngBounds()
+      const bounds = new window.google.maps.LatLngBounds()
 
       // 모든 경로 포인트를 바운드에 추가
       path.forEach((point: any) => {
-        bounds.extend(new google.maps.LatLng(point.lat, point.lng))
+        bounds.extend(new window.google.maps.LatLng(point.lat, point.lng))
       })
 
       // 바운드 여백 추가를 위한 확장
@@ -71,9 +71,9 @@ export function useDirections(map: any) {
         const lngPadding = lngDiff * 0.1  // 좌우 10% 여백
 
         // 확장된 바운드 생성
-        const extendedBounds = new google.maps.LatLngBounds(
-          new google.maps.LatLng(sw.lat() - latPadding, sw.lng() - lngPadding),
-          new google.maps.LatLng(ne.lat() + latPadding, ne.lng() + lngPadding)
+        const extendedBounds = new window.google.maps.LatLngBounds(
+          new window.google.maps.LatLng(sw.lat() - latPadding, sw.lng() - lngPadding),
+          new window.google.maps.LatLng(ne.lat() + latPadding, ne.lng() + lngPadding)
         )
 
         return extendedBounds
@@ -94,7 +94,7 @@ export function useDirections(map: any) {
           const offset = viewportHeight * 0.15
 
           // 중심점을 북쪽으로 이동 (하단 여백 효과)
-          const newCenter = new google.maps.LatLng(
+          const newCenter = new window.google.maps.LatLng(
             center.lat() + offset,
             center.lng()
           )
@@ -123,7 +123,7 @@ export function useDirections(map: any) {
 
     // 경로에 화살표 심볼 추가
     const arrowSymbol = {
-      path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+      path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
       scale: 1, // 화살표 크기 증가
       strokeColor: '#FFFFFF',
       fillColor: strokeColor,
@@ -132,7 +132,7 @@ export function useDirections(map: any) {
     }
 
     // 경로 그림자 효과를 위한 폴리라인
-    const shadowPolyline = new google.maps.Polyline({
+    const shadowPolyline = new window.google.maps.Polyline({
       path: path,
       strokeColor: '#000000',
       strokeOpacity: 0.4,
@@ -142,7 +142,7 @@ export function useDirections(map: any) {
     })
 
     // 경로 밝기 효과를 위한 보조 폴리라인
-    const underPolyline = new google.maps.Polyline({
+    const underPolyline = new window.google.maps.Polyline({
       path: path,
       strokeColor: '#FFFFFF', // 흰색 테두리
       strokeOpacity: 0.7,
@@ -152,7 +152,7 @@ export function useDirections(map: any) {
     })
 
     // 고정된 실선 폴리라인
-    const solidLine = new google.maps.Polyline({
+    const solidLine = new window.google.maps.Polyline({
       path: path,
       strokeColor: strokeColor,
       strokeOpacity: 0.8,
@@ -162,7 +162,7 @@ export function useDirections(map: any) {
     })
 
     // 점선/대시 효과를 위한 메인 폴리라인
-    const dashLine = new google.maps.Polyline({
+    const dashLine = new window.google.maps.Polyline({
       path: path,
       strokeOpacity: 0,
       icons: [
@@ -183,7 +183,7 @@ export function useDirections(map: any) {
     })
 
     // 화살표 애니메이션을 위한 메인 폴리라인
-    const arrowLine = new google.maps.Polyline({
+    const arrowLine = new window.google.maps.Polyline({
       path: path,
       strokeOpacity: 0,
       icons: [
@@ -235,7 +235,7 @@ export function useDirections(map: any) {
   }
 
   // Mapbox 경로 데이터를 Google Maps에 표시
-  const drawMapboxRoute = (routeData: any, mode: string = 'walking'): { polyline: any, routeInfo: RouteInfo } => {
+  const drawMapboxRoute = (routeData: any, mode: string = 'walking'): { polyline: any, routeInfo: RouteInfo } | null => {
     // 기존 경로 확실히 제거
     clearDirections()
 
@@ -274,7 +274,7 @@ export function useDirections(map: any) {
 
         // 마커 라이브러리를 로드하고 마커를 생성하는 비동기 함수
         const createRouteMarkers = async () => {
-          const { AdvancedMarkerElement } = await google.maps.importLibrary('marker')
+          const { AdvancedMarkerElement } = await window.google.maps.importLibrary('marker')
 
           // 출발지 마커
           const startMarkerElement = document.createElement('div')

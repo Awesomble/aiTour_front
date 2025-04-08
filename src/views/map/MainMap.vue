@@ -3,6 +3,7 @@ import { watch, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MainMap from '@/components/maps/index.vue'
 import { getMainCategoriesAPI } from '@/network/app'
+import { useVibration } from '@/composables/useVibration'
 
 defineOptions({
   name: 'main-map'
@@ -10,8 +11,8 @@ defineOptions({
 
 const route = useRoute()
 const router = useRouter()
-const mapComponent = ref(null)
-const mountIdx = ref(1)
+const vibrate = useVibration()
+const mapComponent = ref<any>(null)
 const mainCategoryList = ref<object[] | null>(null)
 const iptMainCategoryList = ref<number[]>([0])
 
@@ -34,24 +35,17 @@ const handleMarkerClick = async (placeId: any) => {
 watch(
   iptMainCategoryList,
   (newValue, oldValue) => {
-    try {
-      window.AndroidInterface.vibrate(2)
-    } catch (err: any) {}
+    vibrate()
     if (!newValue.length) {
       iptMainCategoryList.value = [0]
       return
     }
-    // 조건 2 & 3: 0과 다른 값이 함께 있을 때
     if (newValue.includes(0) && newValue.some((val) => val !== 0)) {
       // 0이 새로 추가되었는지 확인
       const zeroJustAdded = !oldValue.includes(0) && newValue.includes(0)
       if (zeroJustAdded) {
-        // 조건 3: 0이 추가되었으면 [0]으로 설정
         iptMainCategoryList.value = [0]
       } else {
-        // try {
-        //   window.AndroidInterface.vibratePattern('success')
-        // } catch (err: any) {}
         iptMainCategoryList.value = newValue.filter((val) => val !== 0)
       }
       return
@@ -60,10 +54,9 @@ watch(
   { deep: true }
 )
 
-// Navigate to user's location
 const goToMyLocation = () => {
   if (mapComponent.value) {
-    mapComponent.value.myLocationCall()
+    mapComponent.value.panToLocation()
   }
 }
 const getMainCategories = async () => {
@@ -83,8 +76,6 @@ onMounted(() => {
       ref="mapComponent"
       :initial-center="{ lat: 37.5663, lng: 126.9779 }"
       :initial-zoom="16"
-      :categories="[]"
-      :active-category="mountIdx"
       @marker-click="handleMarkerClick"
     >
       <template #floating-controls>
@@ -119,7 +110,7 @@ onMounted(() => {
 <style lang="scss">
 .btn-floating {
   position: fixed;
-  right: 15px;
+  left: 15px;
   bottom: 180px;
   z-index: 99;
   background: linear-gradient(135deg, #1483c2, #2575fc);
@@ -128,10 +119,9 @@ onMounted(() => {
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
-}
-
-.btn-floating.active {
-  animation: heartbeat 0.6s infinite;
+  &.active {
+    animation: heartbeat 0.6s infinite;
+  }
 }
 
 @keyframes heartbeat {
@@ -160,29 +150,26 @@ onMounted(() => {
   overflow-x: auto;
   padding: 10px;
   scrollbar-width: none; /* Firefox에서 스크롤바 숨김 */
-}
-
-.cate-box::-webkit-scrollbar {
-  display: none; /* Chrome, Safari에서 스크롤바 숨김 */
-}
-
-.custom-chip {
-  background-color: rgba(255, 255, 255, 0.3) !important; /* 반투명 배경 */
-  backdrop-filter: blur(8px); /* 블러 효과 */
-  -webkit-backdrop-filter: blur(8px); /* Safari 지원 */
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 9999px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.1s ease;
-  color: #222 !important; /* 텍스트 색상 진하게 */
-  font-weight: 500; /* 텍스트 약간 두껍게 */
-  text-shadow: 0 0 1px rgba(255, 255, 255, 0.5); /* 텍스트 가독성 향상 */
-}
-
-.custom-chip.v-chip--selected {
-  background-color: rgba(25, 118, 210, 0.75) !important; /* 액티브 시 색상 */
-  color: white !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.9);
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari에서 스크롤바 숨김 */
+  }
+  .custom-chip {
+    background-color: rgba(255, 255, 255, 0.3) !important; /* 반투명 배경 */
+    backdrop-filter: blur(8px); /* 블러 효과 */
+    -webkit-backdrop-filter: blur(8px); /* Safari 지원 */
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 9999px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.1s ease;
+    color: #222 !important; /* 텍스트 색상 진하게 */
+    font-weight: 500; /* 텍스트 약간 두껍게 */
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.5); /* 텍스트 가독성 향상 */
+    &.v-chip--selected {
+      background-color: rgba(25, 118, 210, 0.75) !important; /* 액티브 시 색상 */
+      color: white !important;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.9);
+    }
+  }
 }
 </style>

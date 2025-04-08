@@ -11,8 +11,10 @@ export const getPlacesListAPI = async (page: number, limit: number = 10, categor
     paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
   })
 }
-export const getPlacesDetailAPI = async (place_id: string | RouteParamValue[]) => {
-  return instance.get(`/places/${place_id}`)
+export const getPlacesDetailAPI = async (place_id: string | RouteParamValue[], lat: number, lng: number) => {
+  return instance.get(`/places/${place_id}`, {
+    params: {lat, lng}
+  })
 }
 export const getRadiusAPI = async (lat: number, lng: number, radius: number, page: number, limit: number = 10, category: number[]) => {
   return instance.get(`/places/radius`, {

@@ -1,26 +1,13 @@
-<!--InstMap/-->
-<!--  index.vue                 # 메인 컴포넌트 (기존 파일 간소화)-->
-<!--  composables/              # 재사용 가능한 로직-->
-<!--    useMapInitialization.ts # 지도 초기화 로직-->
-<!--    useMarkers.ts           # 마커 관련 로직-->
-<!--    useDirections.ts        # 길찾기 관련 로직-->
-<!--    useMapEvents.ts         # 지도 이벤트 처리-->
-<!--    useGPS.ts               # GPS 관련 로직-->
-<!--  utils/                    # 유틸리티 함수-->
-<!--    formatters.ts           # 포맷팅 유틸리티-->
-<!--    mapHelpers.ts           # 지도 관련 헬퍼 함수-->
 <script setup lang="ts">
-import { onActivated, onMounted, onBeforeUnmount, defineProps, defineEmits, watch, nextTick } from 'vue'
+import { onActivated, onMounted, onBeforeUnmount, defineProps, defineEmits, ref } from 'vue'
 import { useMapStore } from '@/store'
-
-// 모듈화된 컴포저블 가져오기
 import { useMapInitialization } from './composables/useMapInitialization'
 import { useMarkers } from './composables/useMarkers'
 import { useDirections } from './composables/useDirections'
-import { useMapEvents } from './composables/useMapEvents'
+import { useIamMarker } from './composables/useIamMarker'
 import { useGPS } from './composables/useGPS'
+import { onBeforeRouteUpdate } from 'vue-router'
 
-// Props 정의
 const props = defineProps({
   initialCenter: {
     type: Object,
@@ -28,7 +15,7 @@ const props = defineProps({
   },
   initialZoom: {
     type: Number,
-    default: 14
+    default: 16
   },
   categories: {
     type: Array,
@@ -40,7 +27,6 @@ const props = defineProps({
   }
 })
 
-// 이벤트 정의
 const emit = defineEmits([
   'update:center',
   'update:zoom',
@@ -49,33 +35,58 @@ const emit = defineEmits([
   'markers-updated'
 ])
 
-// 맵 스토어 초기화
 const mapStore = useMapStore()
+const mapInitialized = ref(false)
 
-const onMapInfoUpdated = () => {
-  fetchPlacesByCategory()
+const { initGPS, cleanupGPS } = useGPS()
+
+// 맵 초기화 콜백 함수들
+const onZoomChanged = (currentZoom: number) => {
+  // 줌 레벨 변경 시 마커 가시성 업데이트
+  if (mapInitialized.value) {
+    updateMarkerVisibility(currentZoom)
+  }
 }
 
-// 맵 초기화 컴포저블 사용
+const onMapIdle = () => {
+  // 지도 이동/줌 완료 시 새로운 데이터 요청
+  if (mapInitialized.value) {
+    fetchPlacesByCategory()
+  }
+}
+
+// 맵 정보 젼경시 처리
+const onMapInfoUpdated = () => {
+  // 이미 초기화되었을 때만 실행
+  if (mapInitialized.value) {
+    fetchPlacesByCategory()
+  }
+}
+
+// 맵 초기화 컴포저블
 const {
   map,
   center,
   zoom,
   mapInfo,
-  iamMarker,
   initializeMap,
   updateMapInfo,
   panToLocation,
-  myLocationCall
-} = useMapInitialization(props, emit, onMapInfoUpdated)
+  cleanupMapEventListeners
+} = useMapInitialization(props, emit, {
+  onZoomChanged,
+  onMapIdle,
+  onMapInfoUpdated,
+  onMapLoaded: (mapInstance) => {
+    // 맵 로드 완료 후 처리
+    emit('map-loaded', mapInstance)
 
-// GPS 관련 컴포저블 사용
-const { initGPS, cleanupGPS } = useGPS()
+    // 초기화 완료 플래그 설정
+    mapInitialized.value = true
+  }
+})
 
-// 맵 이벤트 컴포저블 사용
-const { setupMapEventListeners, cleanupEventListeners } = useMapEvents(map, updateMapInfo, emit)
-
-// 마커 관련 컴포저블 사용
+// 마커 컴포저블
 const {
   isLoading,
   activePlaces,
@@ -84,98 +95,83 @@ const {
   updateMarkerVisibility,
   clearAllMarkers,
   removeMarkerByPlaceId,
-  fetchPlacesByCategory
-} = useMarkers(map, mapInfo, emit, iamMarker)
+  fetchPlacesByCategory,
+  loadMarkerLibrary,
+} = useMarkers(map, mapInfo, emit)
 
-// 길찾기 관련 컴포저블 사용
+// Iam마커 컴포저블
+const { iamMarker, initializeIamMarker, updatePosition } = useIamMarker()
+
+// 경로 컴포저블
 const { clearDirections, findDirections } = useDirections(map)
 
-
-// 컴포넌트 라이프사이클 훅
 onMounted(async () => {
+  // GPS 초기화
   initGPS()
-  const mapInstance = await initializeMap()
-  if (mapInstance) {
-    setupMapEventListeners()
 
-    // 초기 카테고리로 장소 불러오기
-    fetchPlacesByCategory()
-    // 로케이션 설정
-    myLocationCall()
-    // 스토어에 저장된 경로 정보가 있다면 로드
+  // 마커 라이브러리 미리 로드 (병렬 처리)
+  const markerLibPromise = loadMarkerLibrary()
+
+  // 맵 초기화
+  const mapInstance = await initializeMap()
+
+  // 마커 라이브러리 로드 완료 대기
+  await markerLibPromise
+
+  if (mapInstance) {
+    await initializeIamMarker(map)
+
+    // 방향 정보가 있다면 경로 표시
     if (mapStore.directions) {
       const { startLat, startLng, destLat, destLng } = mapStore.directions
-      findDirections(startLat, startLng, destLat, destLng)
+      await findDirections(startLat, startLng, destLat, destLng)
     }
+
+    // 이제 데이터를 가져오고 마커 표시
+    await fetchPlacesByCategory()
   }
 })
 
 onBeforeUnmount(() => {
   cleanupGPS()
-  cleanupEventListeners()
+  cleanupMapEventListeners()
   clearAllMarkers()
   clearDirections()
+  mapInitialized.value = false
 })
 
-onActivated(() => {
-  if (map.value && markerData.value.length > 0) {
-    // 캐시된 마커 복원
-    activePlaces.value = markerData.value
-    updateMarkers()
-  } else {
-    fetchPlacesByCategory()
-  }
+onActivated(async () => {
+  if (map.value) {
+    await updateMapInfo() // 맵 경계 정보 업데이트
+    await initializeIamMarker(map)
 
-  if (map.value && iamMarker.value) {
-    // Reattach marker to map if needed
-    iamMarker.value.map = map.value
-  }
+    // 마커 가시성 업데이트
+    updateMarkerVisibility(zoom.value)
 
-  // 컴포넌트 활성화 시 경로 정보 복원
-  if (mapStore.directions && map.value) {
-    const { startLat, startLng, destLat, destLng } = mapStore.directions
-    findDirections(startLat, startLng, destLat, destLng)
+    // 방향 정보 갱신 (필요시)
+    if (mapStore.directions) {
+      const { startLat, startLng, destLat, destLng } = mapStore.directions
+      await findDirections(startLat, startLng, destLat, destLng)
+    }
   }
 })
 
-// 줌 변경 시 마커 가시성 업데이트
-watch(() => zoom.value, (newZoom) => {
-  updateMarkerVisibility(newZoom)
-})
-
-// 카테고리 변경 함수
-const setActiveCategory = (idx: number) => {
-  fetchPlacesByCategory()
-}
-
-// 부모 컴포넌트에 노출할 함수
 defineExpose({
   panToLocation,
-  setActiveCategory,
-  myLocationCall,
+  updatePosition,
   clearAllMarkers,
   removeMarkerByPlaceId,
   findDirections,
   clearDirections
 })
+
+onBeforeRouteUpdate(() => {
+  clearDirections()
+})
 </script>
 
 <template>
   <div id="instMap" class="inst-map" style="width: 100%" />
-  <!-- SVG 필터 정의 -->
-  <svg width="0" height="0" style="position: absolute;">
-    <defs>
-      <filter id="glow-effect" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="3.5" result="blur" />
-        <feFlood flood-color="#4285F4" flood-opacity="0.3" result="color"/>
-        <feComposite in="color" in2="blur" operator="in" result="glow"/>
-        <feMerge>
-          <feMergeNode in="glow"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-    </defs>
-  </svg>
   <slot name="floating-controls"></slot>
 </template>
 
@@ -201,7 +197,7 @@ defineExpose({
     left: 50%;
     width: 14px;
     height: 14px;
-    background-color: #007AFF;
+    background-color: #007aff;
     border-radius: 50%;
     transform: translate(-50%, -50%);
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
@@ -245,7 +241,7 @@ defineExpose({
       left: 50%;
       width: 2px;
       height: 6px;
-      background-color: #007AFF;
+      background-color: #007aff;
       transform: translateX(-50%);
     }
   }
@@ -265,7 +261,7 @@ defineExpose({
   }
 }
 
-// Pin styling
+/* 마커 스타일링은 원본 그대로 유지 */
 .pin {
   position: relative;
   width: 35px;
@@ -283,9 +279,6 @@ defineExpose({
 
   &.active {
     transform: scale(1.1);
-    box-shadow:
-      0 5px 12px rgba(0, 0, 0, 0.2),
-      0 0 0 4px rgba(24, 144, 255, 0.3);
     z-index: 10;
 
     .pin-icon-container svg {
@@ -303,7 +296,6 @@ defineExpose({
   }
 }
 
-// Pin with image styling
 .pin-with-image {
   position: relative;
   width: 100%;
@@ -351,7 +343,6 @@ defineExpose({
   }
 }
 
-// Landmark marker styling
 .landmark-marker {
   width: 60px;
   height: 80px;
@@ -387,7 +378,16 @@ defineExpose({
   object-position: center;
 }
 
-// Route markers styling
+.landmark-marker.active {
+  transform: scale(1.15) translateY(-5px) !important;
+  z-index: 1000 !important;
+}
+
+.landmark-marker.active img {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
 @keyframes pin-appear {
   0% {
     transform: translateY(10px);

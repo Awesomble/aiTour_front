@@ -60,8 +60,8 @@ const route = useRoute()
   width: 100%;
   height: 60px;
   background-color: rgba(255, 255, 255, 0.1); // Transparent white
-  backdrop-filter: blur(4px); // Blur effect
-  -webkit-backdrop-filter: blur(4px); // For Safari
+  backdrop-filter: blur(3px); // Blur effect
+  -webkit-backdrop-filter: blur(3px); // For Safari
   display: flex;
   justify-content: space-between;
   align-items: center;
