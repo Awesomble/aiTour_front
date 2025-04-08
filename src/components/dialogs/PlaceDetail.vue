@@ -400,9 +400,9 @@ const findDirectionsCall = async () => {
     detail.value.longitude
   )
   // 길찾기 누르면 팝업 닫기 (선택 사항)
-  const query = { ...route.query }
-  delete query.place
-  router.replace({ path: route.path, query: query })
+  // const query = { ...route.query }
+  // delete query.place
+  // router.replace({ path: route.path, query: query })
 }
 
 // --- Watchers ---
