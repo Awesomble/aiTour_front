@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onBeforeMount, nextTick, computed } from 'vue'
+import { ref, reactive, onBeforeMount, nextTick, computed, watch } from 'vue'
 import { useUserStore } from '@/store'
 import { useRouter } from 'vue-router'
 import { getInitials } from '@/plugins/utils'
@@ -79,6 +79,12 @@ const formData = reactive<UserInfo>({
 // 의료 정보 글자 수 계산을 위한 computed 속성
 const medicalInfoLength = computed(() => {
   return formData.medical_info?.length || 0
+})
+
+watch(() => userStore.userInfo, (newValue) => {
+  if (newValue) {
+    setUserInfo()
+  }
 })
 
 const handleProfileImageChange = async (event: Event) => {
@@ -241,6 +247,7 @@ const setUserInfo = () => {
   }
   formData.special_blood_type_info = userStore.userInfo?.special_blood_type_info || ''
   formData.thumbnail_url = userStore.userInfo?.thumbnail_url || ''
+  console.log(formData)
 }
 
 // Mobiscroll 초기화 함수
@@ -282,7 +289,7 @@ const initializeMobiscroll = async () => {
 
 // 컴포넌트 마운트 시 데이터 로드
 onBeforeMount(async () => {
-  await userStore.getUserInfo()
+  if (!userStore.userInfo) await userStore.getUserInfo()
   setUserInfo()
 })
 </script>

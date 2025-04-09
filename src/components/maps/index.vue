@@ -149,10 +149,10 @@ onActivated(async () => {
     updateMarkerVisibility(zoom.value)
 
     // 방향 정보 갱신 (필요시)
-    if (mapStore.directions) {
-      const { startLat, startLng, destLat, destLng } = mapStore.directions
-      await findDirections(startLat, startLng, destLat, destLng)
-    }
+    // if (mapStore.directions) {
+    //   const { startLat, startLng, destLat, destLng } = mapStore.directions
+    //   await findDirections(startLat, startLng, destLat, destLng)
+    // }
   }
 })
 

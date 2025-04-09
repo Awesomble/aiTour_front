@@ -9,9 +9,9 @@ import { UserInfo } from '@/types'
 
 const defaultRegion = 'ap-northeast-2'
 const useUserStore = defineStore('user', () => {
-  const user: Ref<object | null> = ref(null)
-  const userInfo: Ref<UserInfo | null> = ref(null)
-  const isAuthenticating: Ref<boolean> = ref(false) // 인증 진행 상태 추적
+const user: Ref<object | null> = ref(null)
+const userInfo: Ref<UserInfo | null> = ref(null)
+const isAuthenticating: Ref<boolean> = ref(false) // 인증 진행 상태 추적
 
   async function getUserInfo() {
     // 이미 인증 중이면 중복 호출 방지
@@ -130,10 +130,8 @@ const useUserStore = defineStore('user', () => {
     userInfo,
     getUserInfo,
     getAccessToken,
-    getBedrockClient,
-    getBedrockRuntimeClient,
     signOutUser,
-    isAuthenticating // 상태 노출
+    isAuthenticating
   }
 })
 

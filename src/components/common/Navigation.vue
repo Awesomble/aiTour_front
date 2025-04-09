@@ -113,9 +113,12 @@ onBeforeUnmount(() => {
     <div class="app-version-container">
       <div class="app-version-inner">
         <v-icon size="12" class="version-icon">mdi-information-outline</v-icon>
-        <span>v{{ appVersion }}</span>
-        <span>bearing:{{ golbalStore.bearing }}</span>
+          <p>v{{ appVersion }}</p>
       </div>
+    </div>
+    <div v-if="userStore.userInfo?.groups?.includes('admin')">
+      <p class="text-caption">GPS:{{ golbalStore.lat }}, {{ golbalStore.lat }}</p>
+      <p class="text-caption">bearing:{{ golbalStore.bearing }}</p>
     </div>
 
   </v-navigation-drawer>
