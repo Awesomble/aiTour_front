@@ -4,23 +4,6 @@ import type { MapBounds } from '../../../types'
 export const MAP_CHANGE_THRESHOLD = 0.001
 
 /**
- * 현재 지도 경계와 이전 경계를 비교하여 마커를 다시 불러와야 하는지 결정
- * @param current 현재 지도 경계
- * @param last 마지막으로 불러온 지도 경계
- * @returns 다시 불러와야 하면 true, 아니면 false
- */
-export const shouldRefetchMarkers = (current: MapBounds, last: MapBounds | null): boolean => {
-  if (!current || !last) return true
-
-  return (
-    Math.abs(current.lat_min - last.lat_min) > MAP_CHANGE_THRESHOLD ||
-    Math.abs(current.lat_max - last.lat_max) > MAP_CHANGE_THRESHOLD ||
-    Math.abs(current.lng_min - last.lng_min) > MAP_CHANGE_THRESHOLD ||
-    Math.abs(current.lng_max - last.lng_max) > MAP_CHANGE_THRESHOLD
-  )
-}
-
-/**
  * 마커 아이콘 색상에서 배경색 생성 (더 밝은 색상)
  * @param hexColor 16진수 색상 코드
  * @returns 밝은 RGB 색상 값

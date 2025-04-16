@@ -1,13 +1,14 @@
 import { ref, nextTick } from 'vue'
 import type { MapInfo, MapProps } from '@/types/map'
 import { useGlobalStore } from '@/store'
+import { isValidLocation } from '@/composables/useGPS'
 
 // 이벤트 콜백 인터페이스 정의
 interface MapEventCallbacks {
-  onZoomChanged?: (zoom: number) => void;
-  onBoundsChanged?: (bounds: any) => void;
-  onMapIdle?: () => void;
-  onMapLoaded?: (mapInstance: any) => void;
+  onZoomChanged?: (zoom: number) => void
+  onBoundsChanged?: (bounds: any) => void
+  onMapIdle?: () => void
+  onMapLoaded?: (mapInstance: any) => void
 }
 
 // 설정 인터페이스 정의
@@ -34,7 +35,7 @@ const DEFAULT_MAP_CONFIG: MapConfig = {
   zoomAnimationDelay: 500,
   animationOptions: {
     duration: 500,
-    easing: "easeInOutCubic"
+    easing: 'easeInOutCubic'
   },
   mapOptions: {
     mapId: 'c8495523c4cf0dd7',
@@ -157,7 +158,7 @@ export function useMapInitialization(
 
         // 콜백 함수 호출 - 통합된 bounds 변경 콜백
         if (callbacks.onBoundsChanged) {
-          callbacks.onBoundsChanged(boundsInfo);
+          callbacks.onBoundsChanged(boundsInfo)
         }
       }
     } catch (err) {
@@ -173,7 +174,7 @@ export function useMapInitialization(
 
     // 드래그 완료 이벤트
     const dragEndListener = mapInstance.addListener('dragend', () => {
-      updateMapInfo();
+      updateMapInfo()
     })
     mapEventListeners.push(dragEndListener)
 
@@ -203,13 +204,17 @@ export function useMapInitialization(
 
       // 줌 변경 콜백 즉시 호출 (마커 가시성을 위해)
       if (callbacks.onZoomChanged) {
-        callbacks.onZoomChanged(currentZoom);
+        callbacks.onZoomChanged(currentZoom)
       }
 
-      const idleAfterZoomListener = window.google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
-        emit('update:zoom', currentZoom)
-        updateMapInfo()
-      })
+      const idleAfterZoomListener = window.google.maps.event.addListenerOnce(
+        mapInstance,
+        'idle',
+        () => {
+          emit('update:zoom', currentZoom)
+          updateMapInfo()
+        }
+      )
       mapEventListeners.push(idleAfterZoomListener)
     })
     mapEventListeners.push(zoomChangedListener)
@@ -217,10 +222,10 @@ export function useMapInitialization(
     // idle 이벤트 (지도 이동/변경 완료)
     const idleListener = mapInstance.addListener('idle', () => {
       if (callbacks.onMapIdle) {
-        callbacks.onMapIdle();
+        callbacks.onMapIdle()
       }
-    });
-    mapEventListeners.push(idleListener);
+    })
+    mapEventListeners.push(idleListener)
   }
 
   /**
@@ -234,7 +239,7 @@ export function useMapInitialization(
       const originalSetZoom = mapInstance.setZoom
 
       // panTo 메서드 오버라이드
-      mapInstance.panTo = function(latLng: any, opts?: any) {
+      mapInstance.panTo = function (latLng: any, opts?: any) {
         originalPanTo.call(this, latLng, opts)
 
         const panCompleteListener = window.google.maps.event.addListenerOnce(this, 'idle', () => {
@@ -244,12 +249,12 @@ export function useMapInitialization(
       }
 
       // setZoom 메서드 오버라이드
-      mapInstance.setZoom = function(zoomLevel: number) {
+      mapInstance.setZoom = function (zoomLevel: number) {
         originalSetZoom.call(this, zoomLevel)
 
         // 줌 변경 콜백 즉시 호출
         if (callbacks.onZoomChanged) {
-          callbacks.onZoomChanged(zoomLevel);
+          callbacks.onZoomChanged(zoomLevel)
         }
 
         const zoomCompleteListener = window.google.maps.event.addListenerOnce(this, 'idle', () => {
@@ -260,21 +265,6 @@ export function useMapInitialization(
     } catch (err) {
       console.error('맵 메서드 오버라이드 오류:', err)
     }
-  }
-
-  /**
-   * 위치 유효성 검사 함수
-   */
-  const isValidLocation = (location: any): boolean => {
-    return (
-      location &&
-      typeof location.lat === 'number' &&
-      typeof location.lng === 'number' &&
-      !isNaN(location.lat) &&
-      !isNaN(location.lng) &&
-      location.lat >= -90 && location.lat <= 90 &&
-      location.lng >= -180 && location.lng <= 180
-    )
   }
 
   /**
@@ -323,7 +313,7 @@ export function useMapInitialization(
 
         // 맵 로드 콜백 호출
         if (callbacks.onMapLoaded) {
-          callbacks.onMapLoaded(mapInstance);
+          callbacks.onMapLoaded(mapInstance)
         }
       })
       mapEventListeners.push(idleListener)
@@ -338,10 +328,7 @@ export function useMapInitialization(
   /**
    * 현재 위치로 지도 이동 함수
    */
-  const panToLocation = (
-    customLocation?: any,
-    customZoom?: number
-  ): void => {
+  const panToLocation = (customLocation?: any, customZoom?: number): void => {
     if (!map.value) return
 
     const location = customLocation || {
@@ -373,7 +360,7 @@ export function useMapInitialization(
    * 맵 이벤트 리스너 정리 함수
    */
   const cleanupMapEventListeners = (): void => {
-    mapEventListeners.forEach(listener => {
+    mapEventListeners.forEach((listener) => {
       if (listener) {
         window.google.maps.event.removeListener(listener)
       }

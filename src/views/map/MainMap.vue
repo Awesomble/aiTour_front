@@ -74,8 +74,6 @@ onMounted(() => {
   <v-container class="pa-0 h-100 w-100" style="max-width: 100%; position: relative">
     <MainMap
       ref="mapComponent"
-      :initial-center="{ lat: 37.5663, lng: 126.9779 }"
-      :initial-zoom="16"
       @marker-click="handleMarkerClick"
     >
       <template #floating-controls>

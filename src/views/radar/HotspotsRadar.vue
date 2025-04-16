@@ -1,502 +1,198 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, onActivated, Ref, computed } from 'vue'
 import { useUserStore, useGlobalStore } from '@/store'
-import { getInitials } from '@/plugins/utils'
-import { getRadiusAPI } from '@/network/app'
+import { useRouter, useRoute } from 'vue-router'
+import { getPlacesListAPI } from '@/network/app'
+import { calculateRadiusBoundaries } from '@/composables/useGPS'
+import { createLighterColor } from '@/components/maps/utils/mapHelpers'
 
-interface Spot {
-  id: number
-  name: string
-  image: string
-  distance: string
-  angle: number
-  radius: number
-  isFeatured: boolean
-}
+// Composables 임포트
+import useRadarState, { Place } from '@/components/radar/composables/useRadarState'
+import useInteractions from '@/components/radar/composables/useInteractions'
+import useGpsTransform from '@/components/radar/composables/useGpsTransform'
 
-interface User {
-  id: number
-  name: string
-  avatar: string
-}
-
+// 상태 관리 스토어 초기화
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
-const radarContainer = ref<HTMLElement | null>(null)
-const isDragging = ref(false)
-const tiltAngleX = ref(0)
-const tiltAngleY = ref(0)
-const dragOffsetX = ref(0)
-const dragOffsetY = ref(0)
-const lastMouseX = ref(0)
-const lastMouseY = ref(0)
-const dampingFactor = 0.92
-const returnToCenter = ref(true)
+const router = useRouter()
+const route = useRoute()
 
-// 핀치 줌 관련 변수
-const zoomLevel = ref(1) // 1-5 사이의 줌 레벨 (1이 가장 넓은 영역)
-const isPinching = ref(false)
-const pinchStartDistance = ref(0)
-const lastPinchDistance = ref(0)
-const pinchThreshold = 5 // 더 민감하게 조정
+// 레이더 컨테이너 참조
+const radarContainer: Ref<HTMLElement | null> = ref(null)
+// 활성화된 마커
+const activeMarkerId: Ref<string | null> = ref(null)
 
-// 쿨다운 및 애니메이션 관련 변수 추가
-const isZoomCooldown = ref(false)
-const animationKey = ref(0)
+// API 호출 관련 상수
+const DEFAULT_FETCH_PAGE = 1
+const DEFAULT_FETCH_LIMIT = 10
 
-// 드래그 관련 변수
-const maxTilt = 30
-const maxOffset = 100
-const tiltFactor = 0.15
-const dragFactor = 0.2
+interface MapBoundaries {
+  lat_min: number
+  lat_max: number
+  lng_min: number
+  lng_max: number
+  [key: string]: any
+}
 
-// 줌 레벨별 속성 계산 - 성능 최적화를 위해 원 갯수 감소
-const levels = {
-  1: {
-    // 가장 넓은 영역, 적은 원
-    circleCount: 2, // 4에서 2로 감소
-    circleSpacing: 130,
-    radarScale: 1.0,
-    spotRadiusMultiplier: 1.8,
-    opacityBase: 0.7,
-    opacityDecrement: 0.15,
-    circleWidth: 1
-  },
-  2: {
-    circleCount: 3, // 6에서 3으로 감소
-    circleSpacing: 110,
-    radarScale: 1.0,
-    spotRadiusMultiplier: 1.4,
-    opacityBase: 0.75,
-    opacityDecrement: 0.12,
-    circleWidth: 1.5
-  },
-  3: {
-    circleCount: 4, // 8에서 4로 감소
-    circleSpacing: 90,
-    radarScale: 1.0,
-    spotRadiusMultiplier: 1.1,
-    opacityBase: 0.8,
-    opacityDecrement: 0.09,
-    circleWidth: 2
-  },
-  4: {
-    circleCount: 5, // 10에서 5로 감소
-    circleSpacing: 70,
-    radarScale: 1.0,
-    spotRadiusMultiplier: 0.8,
-    opacityBase: 0.85,
-    opacityDecrement: 0.07,
-    circleWidth: 2.5
-  },
-  5: {
-    // 가장 좁은 영역, 많은 원
-    circleCount: 6, // 12에서 6으로 감소
-    circleSpacing: 50,
-    radarScale: 1.0,
-    spotRadiusMultiplier: 0.6,
-    opacityBase: 0.9,
-    opacityDecrement: 0.05,
-    circleWidth: 3
+interface ApiResponse {
+  data?: {
+    items?: Place[]
   }
 }
 
-const zoomLevelProperties = computed(() => {
-  return levels[zoomLevel.value]
+// Composables 사용
+const radarState = useRadarState()
+const {
+  zoomLevel,
+  animationKey,
+  placeItems,
+  containerSize,
+  zoomLevelProperties,
+  isContainerSizeValid,
+  setZoomCooldown,
+  getIconSize,
+  isZoomCooldown,
+  updateContainerSize
+} = radarState
+
+const interactions = useInteractions(zoomLevel, setZoomCooldown, animationKey)
+const {
+  radarStyle,
+  handleMouseDown,
+  handleMouseMove,
+  handleMouseUp,
+  handleMouseLeave,
+  handleTouchStart,
+  handleTouchMove,
+  handleTouchEnd
+} = interactions
+
+const gpsTransform = useGpsTransform()
+const adjustedPlacePositions = computed(() => {
+  return gpsTransform.getAdjustedPlacePositions(
+    placeItems.value,
+    isContainerSizeValid,
+    globalStore,
+    zoomLevel,
+    containerSize
+  )
 })
-
-// 친구 정보
-const friends = reactive<User[]>([
-  { id: 2, name: 'Joel', avatar: 'https://randomuser.me/api/portraits/men/41.jpg' },
-  { id: 3, name: 'Kim', avatar: 'https://randomuser.me/api/portraits/women/63.jpg' },
-  { id: 4, name: 'Anna', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
-  { id: 5, name: 'Friend4', avatar: 'https://randomuser.me/api/portraits/men/55.jpg' },
-  { id: 6, name: 'Friend5', avatar: 'https://randomuser.me/api/portraits/women/66.jpg' }
-])
-
-// 스팟 정보
-const spots = reactive<Spot[]>([
-  {
-    id: 1,
-    name: 'Kyoto Local Road',
-    image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e',
-    distance: '673 m',
-    angle: 30,
-    radius: 210,
-    isFeatured: true
-  },
-  {
-    id: 2,
-    name: 'Arashiyama',
-    image: 'https://images.unsplash.com/photo-1493997181344-712f2f19d87a',
-    distance: '951 m',
-    angle: 150,
-    radius: 170,
-    isFeatured: false
-  },
-  {
-    id: 3,
-    name: 'Daigoji Lake',
-    image: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186',
-    distance: '690 m',
-    angle: 240,
-    radius: 190,
-    isFeatured: false
-  },
-  {
-    id: 4,
-    name: 'Chureito Pagoda',
-    image: 'https://images.unsplash.com/photo-1528164344705-47542687000d',
-    distance: '992 m',
-    angle: 330,
-    radius: 220,
-    isFeatured: false
-  },
-  {
-    id: 5,
-    name: 'Itsukushima',
-    image: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9',
-    distance: '1.8 km',
-    angle: 275,
-    radius: 260,
-    isFeatured: false
-  }
-])
-
-// 스팟 위치 계산 함수
-const calculateSpotPosition = (spot: Spot, index: number) => {
-  const radian = (spot.angle * Math.PI) / 180
-  const size = spot.isFeatured ? 75 : 45
-
-  // 줌 레벨에 따라 반경 조정
-  const adjustedRadius = spot.radius * zoomLevelProperties.value.spotRadiusMultiplier
-
-  // 스팟의 위치에 따라 다른 움직임 계수 적용
-  const moveFactor = adjustedRadius > 180 ? 0.8 : 0.5
-
-  return {
-    position: 'absolute',
-    left: `calc(50% + ${Math.cos(radian) * adjustedRadius - size / 2}px)`,
-    top: `calc(50% + ${Math.sin(radian) * adjustedRadius - size / 2}px)`,
-    zIndex: 10,
-    transform: `translate3d(${dragOffsetX.value * moveFactor}px, ${dragOffsetY.value * moveFactor}px, 0) rotateX(${-tiltAngleX.value * moveFactor}deg) rotateY(${tiltAngleY.value * moveFactor}deg)`
-  }
-}
-
-// 레이더 스타일 계산 함수
-const radarStyle = () => {
-  return {
-    transform: `translate3d(${dragOffsetX.value}px, ${dragOffsetY.value}px, 0) rotateX(${-tiltAngleX.value}deg) rotateY(${tiltAngleY.value}deg)`,
-    transformStyle: 'preserve-3d',
-    transition:
-      isDragging.value || isPinching.value ? 'none' : 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'
-  }
-}
-
-// 쿨다운 설정 함수 추가
-const setZoomCooldown = () => {
-  isZoomCooldown.value = true
-  setTimeout(() => {
-    isZoomCooldown.value = false
-  }, 1000) // 1 second cooldown
-}
-
-// 드래그 시작 이벤트 핸들러
-const handleMouseDown = (e: MouseEvent) => {
-  isDragging.value = true
-  lastMouseX.value = e.clientX
-  lastMouseY.value = e.clientY
-
-  // 애니메이션 프레임 중지
-  if (returnToCenter.value) {
-    returnToCenter.value = false
-  }
-}
-
-// 드래그 이벤트 핸들러
-const handleMouseMove = (e: MouseEvent) => {
-  if (!isDragging.value) return
-
-  // 마우스 이동 거리 계산
-  const deltaX = e.clientX - lastMouseX.value
-  const deltaY = e.clientY - lastMouseY.value
-
-  // 기울기 및 이동 거리 업데이트
-  tiltAngleY.value += deltaX * tiltFactor
-  tiltAngleX.value += deltaY * tiltFactor
-  dragOffsetX.value += deltaX * dragFactor
-  dragOffsetY.value += deltaY * dragFactor
-
-  // 최대 기울기 및 이동 제한
-  tiltAngleY.value = Math.max(Math.min(tiltAngleY.value, maxTilt), -maxTilt)
-  tiltAngleX.value = Math.max(Math.min(tiltAngleX.value, maxTilt), -maxTilt)
-  dragOffsetX.value = Math.max(Math.min(dragOffsetX.value, maxOffset), -maxOffset)
-  dragOffsetY.value = Math.max(Math.min(dragOffsetY.value, maxOffset), -maxOffset)
-
-  // 마지막 마우스 위치 업데이트
-  lastMouseX.value = e.clientX
-  lastMouseY.value = e.clientY
-}
-
-// 드래그 종료 이벤트 핸들러
-const handleMouseUp = () => {
-  isDragging.value = false
-
-  // 중앙으로 돌아가는 애니메이션 시작
-  returnToCenter.value = true
-  animateReturnToCenter()
-}
-
-// 중앙으로 돌아가는 애니메이션
-const animateReturnToCenter = () => {
-  if (!returnToCenter.value) return
-
-  // 기울기 및 이동 거리를 점진적으로 0으로 감소시킴
-  tiltAngleX.value *= dampingFactor
-  tiltAngleY.value *= dampingFactor
-  dragOffsetX.value *= dampingFactor
-  dragOffsetY.value *= dampingFactor
-
-  // 값이 매우 작아지면 0으로 설정
-  if (Math.abs(tiltAngleX.value) < 0.01) tiltAngleX.value = 0
-  if (Math.abs(tiltAngleY.value) < 0.01) tiltAngleY.value = 0
-  if (Math.abs(dragOffsetX.value) < 0.01) dragOffsetX.value = 0
-  if (Math.abs(dragOffsetY.value) < 0.01) dragOffsetY.value = 0
-
-  // 모든 값이 0이 되면 애니메이션 중지
-  if (
-    tiltAngleX.value === 0 &&
-    tiltAngleY.value === 0 &&
-    dragOffsetX.value === 0 &&
-    dragOffsetY.value === 0
-  ) {
-    returnToCenter.value = false
-    return
-  }
-
-  // 다음 프레임 요청
-  requestAnimationFrame(animateReturnToCenter)
-}
-
-// 마우스가 레이더 영역을 떠날 경우 드래그 종료
-const handleMouseLeave = () => {
-  if (isDragging.value) {
-    handleMouseUp()
-  }
-}
-
-// 마우스 휠 이벤트 핸들러 추가 (데스크톱 테스트용)
-const handleMouseWheel = (e: WheelEvent) => {
-  e.preventDefault()
-
-  // 쿨다운 중인 경우 무시
-  if (isZoomCooldown.value) {
-    return
-  }
-
-  // 휠 방향에 따라 줌 레벨 조정
-  if (e.deltaY > 0) {
-    // 휠 다운 - 줌 아웃 (레벨 감소)
-    if (zoomLevel.value > 1) {
-      zoomLevel.value--
-      setZoomCooldown()
-      animationKey.value++
-    }
-  } else {
-    // 휠 업 - 줌 인 (레벨 증가)
-    if (zoomLevel.value < 5) {
-      zoomLevel.value++
-      setZoomCooldown()
-      animationKey.value++
-    }
-  }
-}
-
-// 키보드 이벤트 핸들러 추가 (데스크톱 테스트용)
-const handleKeyDown = (e: KeyboardEvent) => {
-  // 쿨다운 중인 경우 무시
-  if (isZoomCooldown.value) {
-    return
-  }
-
-  // +, = 키로 줌 인
-  if (e.key === '+' || e.key === '=') {
-    if (zoomLevel.value < 5) {
-      zoomLevel.value++
-      setZoomCooldown()
-      animationKey.value++
-    }
-  }
-  // - 키로 줌 아웃
-  else if (e.key === '-' || e.key === '_') {
-    if (zoomLevel.value > 1) {
-      zoomLevel.value--
-      setZoomCooldown()
-      animationKey.value++
-    }
-  }
-}
-
-// 터치 이벤트 핸들러 (핀치 줌 기능 개선)
-const handleTouchStart = (e: TouchEvent) => {
-  if (e.touches.length === 1) {
-    // 단일 터치 - 드래그로 처리
-    isDragging.value = true
-    isPinching.value = false
-    lastMouseX.value = e.touches[0].clientX
-    lastMouseY.value = e.touches[0].clientY
-    returnToCenter.value = false
-  } else if (e.touches.length === 2) {
-    // 핀치 제스처 시작 - 초기 거리 계산
-    isDragging.value = false
-    isPinching.value = true
-
-    const dx = e.touches[0].clientX - e.touches[1].clientX
-    const dy = e.touches[0].clientY - e.touches[1].clientY
-    pinchStartDistance.value = Math.sqrt(dx * dx + dy * dy)
-    lastPinchDistance.value = pinchStartDistance.value
-  }
-}
-
-// 핀치 이벤트 핸들러 수정
-const handleTouchMove = (e: TouchEvent) => {
-  // 기본 스크롤 동작 방지
-  e.preventDefault()
-
-  if (e.touches.length === 2) {
-    // 핀칭 모드
-    isPinching.value = true
-    isDragging.value = false
-
-    // 핀치 거리 계산
-    const dx = e.touches[0].clientX - e.touches[1].clientX
-    const dy = e.touches[0].clientY - e.touches[1].clientY
-    const currentDistance = Math.sqrt(dx * dx + dy * dy)
-
-    // 시작 거리가 0이면 초기화
-    if (pinchStartDistance.value === 0) {
-      pinchStartDistance.value = currentDistance
-      lastPinchDistance.value = currentDistance
-      return
-    }
-
-    // 핀치 거리 변화 확인
-    const pinchChange = currentDistance - lastPinchDistance.value
-
-    // 핀치 거리에 따라 줌 레벨 조정 (쿨다운 확인)
-    if (Math.abs(pinchChange) > pinchThreshold && !isZoomCooldown.value) {
-      if (pinchChange > 0) {
-        // 핀치 아웃 - 줌 아웃 (레벨 감소 = 영역 확대)
-        if (zoomLevel.value > 1) {
-          zoomLevel.value--
-          setZoomCooldown() // 쿨다운 적용
-          animationKey.value++ // 애니메이션 초기화
-        }
-      } else if (pinchChange < 0) {
-        // 핀치 인 - 줌 인 (레벨 증가 = 영역 축소)
-        if (zoomLevel.value < 5) {
-          zoomLevel.value++
-          setZoomCooldown() // 쿨다운 적용
-          animationKey.value++ // 애니메이션 초기화
-        }
-      }
-      // 다음 비교를 위해 현재 거리 저장
-      lastPinchDistance.value = currentDistance
-    }
-  } else if (e.touches.length === 1) {
-    // 드래그 모드로 전환
-    if (isPinching.value) {
-      isPinching.value = false
-      pinchStartDistance.value = 0
-      lastPinchDistance.value = 0
-      isDragging.value = true
-      lastMouseX.value = e.touches[0].clientX
-      lastMouseY.value = e.touches[0].clientY
-    }
-
-    if (isDragging.value) {
-      // 단일 터치 드래그 처리
-      const touch = e.touches[0]
-      const deltaX = touch.clientX - lastMouseX.value
-      const deltaY = touch.clientY - lastMouseY.value
-
-      tiltAngleY.value += deltaX * tiltFactor
-      tiltAngleX.value += deltaY * tiltFactor
-      dragOffsetX.value += deltaX * dragFactor
-      dragOffsetY.value += deltaY * dragFactor
-
-      tiltAngleY.value = Math.max(Math.min(tiltAngleY.value, maxTilt), -maxTilt)
-      tiltAngleX.value = Math.max(Math.min(tiltAngleX.value, maxTilt), -maxTilt)
-      dragOffsetX.value = Math.max(Math.min(dragOffsetX.value, maxOffset), -maxOffset)
-      dragOffsetY.value = Math.max(Math.min(dragOffsetY.value, maxOffset), -maxOffset)
-
-      lastMouseX.value = touch.clientX
-      lastMouseY.value = touch.clientY
-    }
-  }
-}
-
-const handleTouchEnd = (e: TouchEvent) => {
-  if (isPinching.value) {
-    if (e.touches.length < 2) {
-      isPinching.value = false
-    }
-  }
-
-  if (isDragging.value) {
-    if (e.touches.length === 0) {
-      isDragging.value = false
-      returnToCenter.value = true
-      animateReturnToCenter()
-    }
-  }
-}
-
-const getRadius = async () => {
-  const zoomToRadius = {
-    1: 1500,
-    2: 1000,
-    3: 700,
-    4: 500,
-    5: 300
-  }
-  const radius = zoomToRadius[zoomLevel.value]
+/**
+ * 반경 API 호출 함수
+ */
+const getRadius = async (): Promise<void> => {
+  const currentMapInfo = calculateRadiusBoundaries(
+    globalStore.lat,
+    globalStore.lng,
+    zoomLevel.value
+  ) as MapBoundaries
+  if (!currentMapInfo) return
   try {
-    const res = await getRadiusAPI(globalStore.lat, globalStore.lng, radius, 1, 10, [])
-    if (res && res.data) {
-      let newSpots
-      if (Array.isArray(res.data)) {
-        newSpots = res.data
-      } else if (res.data && typeof res.data[Symbol.iterator] === 'function') {
-        newSpots = Array.from(res.data)
-      } else {
-        newSpots = [res.data]
-      }
-      spots.splice(0, spots.length, ...newSpots)
+    const res: ApiResponse = await getPlacesListAPI(
+      DEFAULT_FETCH_PAGE,
+      DEFAULT_FETCH_LIMIT,
+      [],
+      currentMapInfo.lat_min,
+      currentMapInfo.lat_max,
+      currentMapInfo.lng_min,
+      currentMapInfo.lng_max
+    )
+
+    if (res?.data?.items) {
+      placeItems.value = res.data.items
     }
   } catch (error) {
-    console.error('Error fetching radius data:', error)
+    console.error('반경 데이터 가져오기 오류:', error)
   }
+}
+
+// 마커 클릭 핸들러
+const handleMarkerClick = async (placeId: any) => {
+  // activeMarkerId 상태 업데이트
+  if (activeMarkerId.value === placeId) {
+    activeMarkerId.value = null
+  } else {
+    activeMarkerId.value = placeId
+  }
+
+  // 현재 쿼리 파라미터에서 place만 제외한 다른 파라미터 유지
+  const { place: _, ...restQuery } = route.query
+
+  if (route.query.place) {
+    // 먼저 place를 제거한 URL로 히스토리 상태 대체 (히스토리 추가 없음)
+    await router.replace({ query: restQuery })
+
+    // 그 다음 새로운 place로 이동 (히스토리에 추가)
+    await router.push({ query: { ...restQuery, place: placeId } })
+  } else {
+    // place가 없는 경우 바로 이동
+    await router.push({ query: { ...restQuery, place: placeId } })
+  }
+}
+
+// 줌 레벨 변경 시 반경 API 재호출
+watch(zoomLevel, () => {
+  getRadius()
+})
+
+let timeoutInst: any = null
+
+watch([globalStore.lat, globalStore.lng], () => {
+  // 기존 타이머가 있으면 취소
+  if (timeoutInst) {
+    clearTimeout(timeoutInst)
+  }
+
+  // 10초 후에 getRadius 호출하는 새 타이머 설정
+  timeoutInst = setTimeout(() => {
+    getRadius()
+    timeoutInst = null
+  }, 5000) // 10초
+})
+
+// route.query.place 변경 시 activeMarkerId 상태 동기화
+watch(
+  () => route.query.place,
+  (newPlaceId) => {
+    activeMarkerId.value = newPlaceId ? String(newPlaceId) : null
+  },
+  { immediate: true }
+)
+
+// 랜드마크 여부 확인
+const isLandmark = (place: Place): boolean => {
+  return !!place.landmark_url
 }
 
 // 컴포넌트 마운트 시 이벤트 리스너 등록
 onMounted(() => {
-  getRadius()
+  setTimeout(() => {
+    updateContainerSize(radarContainer)
+    getRadius()
+  }, 100)
+
   if (radarContainer.value) {
     radarContainer.value.addEventListener('mousedown', handleMouseDown)
     radarContainer.value.addEventListener('touchstart', handleTouchStart, { passive: false })
-    radarContainer.value.addEventListener('wheel', handleMouseWheel, { passive: false })
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('touchmove', handleTouchMove, { passive: false })
     window.addEventListener('mouseup', handleMouseUp)
     window.addEventListener('touchend', handleTouchEnd)
     radarContainer.value.addEventListener('mouseleave', handleMouseLeave)
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('resize', () => updateContainerSize(radarContainer))
   }
 })
 
-// 줌 레벨 변경 시 반경 API 재호출
-watch(zoomLevel, () => {
+// 방향 표시 컴포넌트가 globalStore.bearing 값 변경을 감지
+watch(
+  () => globalStore.bearing,
+  (newBearing) => {
+    console.log('방향 변경:', newBearing)
+  }
+)
+
+onActivated(() => {
+  updateContainerSize(radarContainer)
   getRadius()
 })
 
@@ -505,29 +201,30 @@ onBeforeUnmount(() => {
   if (radarContainer.value) {
     radarContainer.value.removeEventListener('mousedown', handleMouseDown)
     radarContainer.value.removeEventListener('touchstart', handleTouchStart)
-    radarContainer.value.removeEventListener('wheel', handleMouseWheel)
     window.removeEventListener('mousemove', handleMouseMove)
     window.removeEventListener('touchmove', handleTouchMove)
     window.removeEventListener('mouseup', handleMouseUp)
     window.removeEventListener('touchend', handleTouchEnd)
     radarContainer.value.removeEventListener('mouseleave', handleMouseLeave)
-    window.removeEventListener('keydown', handleKeyDown)
+    window.removeEventListener('resize', () => updateContainerSize(radarContainer))
   }
 })
 </script>
 
 <template>
   <v-container class="discovery-container pa-4">
-    <div class="header d-flex justify-space-between align-center mb-4">
+    <div class="header d-flex justify-space-between align-center mb-4 status-bar-pt2">
       <div class="title">
-        <h2 class="text-h6 font-weight-bold">What's poppin' within {{ zoomLevel }}km</h2>
-        <h2 class="text-h6 font-weight-bold">Let's hit the hottest spots near you.</h2>
+        <h2 class="text-h6 font-weight-bold">
+          🔥 반경 {{ zoomLevelProperties.displayName }} 지역 탐색
+        </h2>
       </div>
     </div>
 
+    <!-- 레이더 컨테이너 -->
     <div class="radar-container" ref="radarContainer" :style="{ perspective: '1000px' }">
       <div class="radar-inner-container" :style="radarStyle()">
-        <!-- 퍼지는 원 애니메이션 - 최적화: 더 적은 원 사용 -->
+        <!-- 레이더 원형 애니메이션 -->
         <div
           v-for="index in zoomLevelProperties.circleCount"
           :key="`circle-${index}-${animationKey}`"
@@ -539,16 +236,53 @@ onBeforeUnmount(() => {
             opacity: `${zoomLevelProperties.opacityBase - index * zoomLevelProperties.opacityDecrement}`,
             borderWidth: `${zoomLevelProperties.circleWidth}px`
           }"
-        ></div>
+        />
+        <!-- 장소 마커 표시 -->
+        <div
+          v-for="(place, index) in placeItems"
+          :key="`place-${place.place_id}`"
+          class="place-marker"
+          :style="{
+            transform: `translate(${adjustedPlacePositions[place.place_id]?.x || 0}px, ${adjustedPlacePositions[place.place_id]?.y || 0}px)`,
+            zIndex: activeMarkerId === place.place_id ? 1000 : 10 + index
+          }"
+          @click="handleMarkerClick(place.place_id)"
+        >
+          <!-- 랜드마크 마커 -->
+          <div
+            v-if="isLandmark(place)"
+            class="landmark-marker"
+            :class="{ active: activeMarkerId === place.place_id }"
+          >
+            <img :src="place.landmark_url" class="landmark-image" alt="Landmark" />
+          </div>
 
-        <!-- 디자인 강화용 레이더 효과 - 성능 최적화를 위해 단순화 -->
-        <div class="radar-scan"></div>
+          <!-- 일반 핀 마커 -->
+          <div v-else class="pin" :class="{ active: activeMarkerId === place.place_id }">
+            <div class="pin-with-image">
+              <div
+                class="pin-inner-circle"
+                :style="{
+                  backgroundColor: place.category?.icon_color
+                    ? createLighterColor(place.category.icon_color)
+                    : '#f0f9ff'
+                }"
+              >
+                <div
+                  class="pin-icon-container"
+                  v-html="place.category?.icon"
+                  :style="{ color: place.category?.icon_color || '#4CAF50' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <!-- 레이더 센터 포인트 -->
+        <!-- 레이더 중앙 포인트 -->
         <div class="radar-center-point"></div>
         <div class="radar-center-point-outer"></div>
 
-        <!-- 중앙 유저 썸네일 -->
+        <!-- 중앙 유저 표시 -->
         <div class="user-thumbnail">
           <v-avatar size="60">
             <v-img
@@ -556,107 +290,35 @@ onBeforeUnmount(() => {
               :src="userStore.userInfo?.thumbnail_url"
               cover
             />
-            <span v-else class="text-h4">{{
-                getInitials(String(userStore.userInfo?.user_name))
-              }}</span>
           </v-avatar>
+          <div
+            class="direction-indicator"
+            :style="{ transform: `rotate(${globalStore.bearing}deg)` }"
+          />
         </div>
       </div>
+    </div>
 
-      <!-- 주변 스팟들 -->
-      <div
-        v-for="(spot, index) in spots"
-        :key="`spot-${index}`"
-        class="spot-item"
-        :style="calculateSpotPosition(spot, index)"
+    <!-- 줌 레벨 버튼 컨트롤 -->
+    <div v-if="false" class="zoom-buttons-container">
+      <v-btn
+        v-for="level in 3"
+        :key="`zoom-btn-${level}`"
+        :color="zoomLevel === level ? 'primary' : 'grey-lighten-3'"
+        :variant="zoomLevel === level ? 'elevated' : 'flat'"
+        :class="{ 'zoom-button-active': zoomLevel === level }"
+        rounded="pill"
+        elevation="1"
+        size="x-small"
+        @click="
+          () => {
+            zoomLevel = level
+            animationKey++
+          }
+        "
       >
-        <div class="speech-bubble">
-          <v-card
-            class="spot-card"
-            :width="spot.isFeatured ? 150 : 90"
-            :height="spot.isFeatured ? 80 : 60"
-            elevation="3"
-            rounded="lg"
-          >
-            <v-img :src="spot.image" height="100%" cover class="spot-image">
-              <template v-slot:placeholder>
-                <v-row class="fill-height ma-0" align="center" justify="center">
-                  <v-progress-circular indeterminate color="grey-lighten-5"></v-progress-circular>
-                </v-row>
-              </template>
-              <div class="spot-overlay d-flex flex-column justify-space-between pa-2">
-                <div class="spot-name font-weight-bold text-caption">{{ spot.name }}</div>
-                <div class="d-flex justify-space-between align-center">
-                  <div class="spot-distance text-caption">
-                    <v-icon size="x-small" color="white">mdi-map-marker</v-icon>
-                    {{ spot.distance }}
-                  </div>
-                  <v-btn
-                    v-if="spot.isFeatured"
-                    color="error"
-                    variant="flat"
-                    density="compact"
-                    size="x-small"
-                    class="text-none"
-                  >
-                    <v-icon size="x-small">mdi-navigation</v-icon>
-                    Get Direction
-                  </v-btn>
-                </div>
-              </div>
-            </v-img>
-          </v-card>
-          <div class="speech-pointer"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 줌 레벨 인디케이터 (단순화) -->
-    <div class="zoom-indicator-container mt-4">
-      <div class="zoom-level-track">
-        <div
-          class="zoom-level-progress"
-          :style="{ width: `${((zoomLevel - 1) / 4) * 100}%` }"
-        ></div>
-        <div
-          v-for="level in 5"
-          :key="`marker-${level}`"
-          class="zoom-level-marker"
-          :class="{ active: level <= zoomLevel }"
-          :style="{ left: `${((level - 1) / 4) * 100}%` }"
-        >
-          <div class="zoom-level-dot"></div>
-          <div class="zoom-level-pulse" v-if="level === zoomLevel"></div>
-        </div>
-      </div>
-
-      <!-- 시각적 줌 레벨 인디케이터 -->
-      <div class="zoom-level-visual-indicator">
-        <div class="radar-icon-container">
-          <div class="zoom-level-name">
-            {{ ['매우 좁음', '좁음', '보통', '넓음', '매우 넓음'][zoomLevel - 1] }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 하단 친구 정보 -->
-    <div class="friends-info mt-4 d-flex align-center">
-      <div class="friends-avatars d-flex">
-        <v-avatar
-          v-for="(friend, index) in friends"
-          :key="`friend-${index}`"
-          :size="32"
-          class="friend-avatar"
-          :style="{ zIndex: friends.length - index }"
-        >
-          <v-img :src="friend.avatar" alt="Friend"></v-img>
-        </v-avatar>
-      </div>
-      <div class="friends-text ml-2">
-        <span class="font-weight-bold">{{ friends[0].name }}, {{ friends[1].name }}</span> and
-        {{ friends.length - 2 }} Friends was in this area.
-      </div>
+        {{ level }}km
+      </v-btn>
     </div>
   </v-container>
 </template>
@@ -700,7 +362,7 @@ onBeforeUnmount(() => {
   will-change: transform;
 }
 
-/* 성능 개선: 블러 효과 제거 및 애니메이션 최적화 */
+/* 레이더 원 애니메이션 */
 .radar-circle {
   position: absolute;
   border-radius: 50%;
@@ -708,27 +370,151 @@ onBeforeUnmount(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  animation: pulse 5s infinite cubic-bezier(0.4, 0, 0.2, 1); /* 애니메이션 시간 증가로 부하 감소 */
+  animation: pulse 5s infinite cubic-bezier(0.4, 0, 0.2, 1);
   background: none;
-  /* backdrop-filter 제거 */
 }
 
-/* 성능 개선: 화면 상단 레이어 단순화 */
-.radar-scan {
+/* 장소 마커 공통 스타일 */
+.place-marker {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 550px;
-  height: 550px;
-  background: conic-gradient(rgba(120, 180, 255, 0.3), transparent 240deg, transparent);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: rotate 8s linear infinite; /* 애니메이션 시간 증가 */
-  opacity: 0.2;
-  z-index: 5;
-  /* backdrop-filter 제거 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
+/* 핀 스타일 */
+.pin {
+  position: relative;
+  width: 35px;
+  height: 35px;
+  background-color: white;
+  border-radius: 30px;
+  border-bottom-left-radius: 5px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pin-appear 0.3s ease;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.pin.active {
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+.pin.active .pin-icon-container svg {
+  transform: scale(1.15);
+}
+
+.pin.active .pin-inner-circle {
+  animation: pulse-light 1.5s ease-in-out infinite;
+}
+
+.pin.active .pin-image-container {
+  transform: translateY(60%) scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.pin-with-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pin-image-container {
+  position: absolute;
+  bottom: 0;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+  transform: translateY(60%);
+  z-index: 1;
+}
+
+.pin-inner-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.pin-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.pin-icon-container svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.2;
+}
+
+/* 랜드마크 마커 스타일 */
+.landmark-marker {
+  width: 60px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  animation: marker-appear 0.3s ease;
+  transform-origin: center bottom;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landmark-marker img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.landmark-marker:hover,
+.landmark-marker.active {
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+.landmark-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.landmark-marker.active {
+  transform: scale(1.15) translateY(-5px) !important;
+  z-index: 1000 !important;
+}
+
+.landmark-marker.active img {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
+/* 레이더 중앙 포인트 */
 .radar-center-point {
   position: absolute;
   top: 50%;
@@ -740,7 +526,7 @@ onBeforeUnmount(() => {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 15px rgba(100, 170, 255, 0.6);
   z-index: 8;
-  animation: pulse-center 2s ease-in-out infinite; /* 애니메이션 시간 증가 */
+  animation: pulse-center 2s ease-in-out infinite;
 }
 
 .radar-center-point-outer {
@@ -753,90 +539,116 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   transform: translate(-50%, -50%);
   z-index: 7;
-  animation: pulse-outer 4s ease-in-out infinite; /* 애니메이션 시간 증가 */
+  animation: pulse-outer 4s ease-in-out infinite;
 }
 
-/* 줌 레벨 인디케이터 */
-.zoom-indicator-container {
-  width: 100%;
-  padding: 0 20px;
-  margin-bottom: 15px;
+/* 줌 레벨 버튼 컨트롤 */
+.zoom-buttons-container {
+  position: fixed;
+  right: 10px;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
 }
 
-.zoom-level-track {
-  position: relative;
-  height: 4px;
-  background-color: rgba(100, 150, 255, 0.2);
-  border-radius: 2px;
-  margin-bottom: 8px;
+.zoom-buttons-container .v-btn {
+  opacity: 0.75;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+  width: 30px;
+  height: 30px;
+  text-transform: none;
+  font-weight: bold;
 }
 
-.zoom-level-progress {
-  position: absolute;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(100, 150, 255, 0.5), rgba(100, 170, 255, 0.9));
-  border-radius: 2px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+.zoom-buttons-container .v-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
 }
 
-.zoom-level-marker {
+.zoom-button-active {
+  opacity: 1 !important;
+  box-shadow: 0 0 15px rgba(25, 118, 210, 0.4);
+  transform: scale(1.1);
+  font-weight: bold !important;
+}
+
+/* 사용자 썸네일 */
+.user-thumbnail {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.zoom-level-dot {
-  width: 8px;
-  height: 8px;
-  background-color: rgba(100, 150, 255, 0.3);
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(100, 170, 255, 0.4);
+  animation: float 4s ease-in-out infinite;
+
+  /* 방향 표시 화살표 */
+  .direction-indicator {
+    position: absolute;
+    top: 35px;
+    left: -20px;
+    transform-origin: center top;
+    pointer-events: none;
+    width: 100px;
+    height: 250px;
+    background: linear-gradient(to bottom, #36d1dc, #5b86e5);
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    border-radius: 0 0 150px 150px;
+    opacity: 0.1;
+    z-index: 0;
+  }
 }
 
-.zoom-level-marker.active .zoom-level-dot {
-  background-color: rgba(100, 150, 255, 0.9);
-  box-shadow: 0 0 10px rgba(100, 150, 255, 0.5);
-}
-
-.zoom-level-pulse {
+.user-thumbnail::after {
+  content: '';
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 68px;
+  height: 68px;
+  top: -4px;
+  left: -4px;
   border-radius: 50%;
-  background-color: rgba(100, 150, 255, 0.2);
-  animation: pulse-marker 3s infinite; /* 애니메이션 시간 증가 */
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  animation: pulse-user 4s infinite alternate;
 }
 
-.zoom-level-visual-indicator {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 16px;
+/* 애니메이션 정의 */
+@keyframes pin-appear {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-.radar-icon-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
+@keyframes pulse-light {
+  0% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(24, 144, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+  }
 }
 
-.zoom-level-name {
-  color: rgba(80, 120, 200, 1);
-  font-weight: bold;
-  font-size: 14px;
-  text-shadow: 0 0 10px rgba(100, 150, 255, 0.3);
-  text-align: center;
-  transition: all 0.3s ease;
+@keyframes marker-appear {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-/* 성능 개선: 애니메이션 최적화 */
 @keyframes pulse-marker {
   0% {
     transform: scale(0.8);
@@ -884,15 +696,6 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes rotate {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
 @keyframes pulse-center {
   0% {
     transform: translate(-50%, -50%) scale(0.8);
@@ -906,29 +709,6 @@ onBeforeUnmount(() => {
     transform: translate(-50%, -50%) scale(0.8);
     opacity: 1;
   }
-}
-
-.user-thumbnail {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 20;
-  border-radius: 50%;
-  box-shadow: 0 0 20px rgba(100, 170, 255, 0.4);
-  animation: float 4s ease-in-out infinite; /* 애니메이션 시간 증가 */
-}
-
-.user-thumbnail::after {
-  content: '';
-  position: absolute;
-  width: 68px;
-  height: 68px;
-  top: -4px;
-  left: -4px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  animation: pulse-user 4s infinite alternate; /* 애니메이션 시간 증가 */
 }
 
 @keyframes pulse-user {
@@ -955,84 +735,5 @@ onBeforeUnmount(() => {
     transform: translate(-50%, -50%) translateY(0px);
     box-shadow: 0 0 15px rgba(100, 150, 255, 0.5);
   }
-}
-
-.speech-bubble {
-  position: relative;
-  display: inline-block;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.08));
-}
-
-.speech-pointer {
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 8px solid white;
-  position: absolute;
-  bottom: -7px;
-  left: 50%;
-  transform: translateX(-50%);
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
-}
-
-/* 성능 개선: 블러 효과 제거 및 애니메이션 최적화 */
-.spot-card {
-  overflow: hidden;
-  transition: all 0.3s ease;
-  border-radius: 12px !important;
-  /* backdrop-filter 제거 */
-}
-
-.spot-card:hover {
-  transform: translateY(-5px) scale(1.03);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
-}
-
-.spot-image {
-  position: relative;
-}
-
-/* 성능 개선: 블러 효과 제거 및 그라데이션 단순화 */
-.spot-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.2) 70%, transparent);
-  color: white;
-  height: 100%;
-  /* backdrop-filter 제거 */
-}
-
-.spot-name {
-  font-size: 14px;
-  line-height: 1.2;
-}
-
-.spot-distance {
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-}
-
-.friends-avatars {
-  display: flex;
-  margin-right: 5px;
-}
-
-.friend-avatar {
-  margin-left: -8px;
-  border: 2px solid white;
-}
-
-.friends-text {
-  font-size: 14px;
-  color: #555;
-}
-
-.spot-item {
-  transition: transform 0.15s ease-out; /* 애니메이션 시간 약간 증가 */
-  will-change: transform;
 }
 </style>

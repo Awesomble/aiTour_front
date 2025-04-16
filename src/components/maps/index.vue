@@ -11,7 +11,10 @@ import { onBeforeRouteUpdate } from 'vue-router'
 const props = defineProps({
   initialCenter: {
     type: Object,
-    default: () => ({ lat: 37.5663, lng: 126.9779 })
+    default: () => ({
+      lat: 37.5663,
+      lng: 126.9779
+    })
   },
   initialZoom: {
     type: Number,
@@ -119,16 +122,16 @@ onMounted(async () => {
   await markerLibPromise
 
   if (mapInstance) {
-    await initializeIamMarker(map)
+
 
     // 방향 정보가 있다면 경로 표시
-    if (mapStore.directions) {
-      const { startLat, startLng, destLat, destLng } = mapStore.directions
-      await findDirections(startLat, startLng, destLat, destLng)
-    }
+    // if (mapStore.directions) {
+    //   const { startLat, startLng, destLat, destLng } = mapStore.directions
+    //   await findDirections(startLat, startLng, destLat, destLng)
+    // }
 
     // 이제 데이터를 가져오고 마커 표시
-    await fetchPlacesByCategory()
+
   }
 })
 
@@ -144,16 +147,16 @@ onActivated(async () => {
   if (map.value) {
     await updateMapInfo() // 맵 경계 정보 업데이트
     await initializeIamMarker(map)
-
+    await initializeIamMarker(map)
+    await updateMarkerVisibility(zoom.value)
+    await fetchPlacesByCategory()
+  }
     // 마커 가시성 업데이트
-    updateMarkerVisibility(zoom.value)
-
     // 방향 정보 갱신 (필요시)
     // if (mapStore.directions) {
     //   const { startLat, startLng, destLat, destLng } = mapStore.directions
     //   await findDirections(startLat, startLng, destLat, destLng)
     // }
-  }
 })
 
 defineExpose({

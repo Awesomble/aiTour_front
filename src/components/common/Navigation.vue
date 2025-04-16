@@ -13,9 +13,25 @@ const locationSharing = ref(true)
 const travelHistorySharing = ref(false)
 const chatAcceptance = ref(true)
 const appVersion = ref(version)
+const GPSDATA = [
+  { "lat": "37.5665", "lng": "126.9780", "bearing": "123.45" },
+  { "lat": "37.5702", "lng": "126.9823", "bearing": "210.34" },
+  { "lat": "37.5583", "lng": "126.9641", "bearing": "65.12" },
+  { "lat": "37.5705", "lng": "126.9825", "bearing": "310.22" },
+  { "lat": "37.5621", "lng": "126.9761", "bearing": "45.67" },
+  { "lat": "37.5650", "lng": "126.9800", "bearing": "88.90" },
+  { "lat": "37.5682", "lng": "126.9837", "bearing": "5.25" },
+  { "lat": "37.5611", "lng": "126.9755", "bearing": "150.76" },
+  { "lat": "37.5678", "lng": "126.9794", "bearing": "270.99" },
+  { "lat": "37.5690", "lng": "126.9829", "bearing": "33.14" }
+]
 
 const isActive = (routeName: string) => {
   return computed(() => route.name === routeName)
+}
+const setGPSCall = () => {
+  const randomData = GPSDATA[Math.floor(Math.random() * GPSDATA.length)]
+  golbalStore.setGPS(Number(randomData.lat), Number(randomData.lng), Number(randomData.bearing), true)
 }
 onBeforeUnmount(() => {
   golbalStore.setNavi(false)
@@ -119,6 +135,8 @@ onBeforeUnmount(() => {
     <div v-if="userStore.userInfo?.groups?.includes('admin')">
       <p class="text-caption">GPS:{{ golbalStore.lat }}, {{ golbalStore.lat }}</p>
       <p class="text-caption">bearing:{{ golbalStore.bearing }}</p>
+      <p class="text-caption">useGPS:{{ golbalStore.useGPS }}</p>
+      <p><v-btn @click="setGPSCall">GPS ACTIVE</v-btn></p>
     </div>
 
   </v-navigation-drawer>

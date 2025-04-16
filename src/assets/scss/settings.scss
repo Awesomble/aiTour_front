@@ -46,6 +46,12 @@
   padding-bottom: var(--nav-bar-height);
 }
 
+.status-bar-pt {
+  padding-top: var(--status-bar-height);
+}
+.nav-bar-pb {
+  padding-top: var(--nav-bar-height);
+}
 
 // mobiscroll
 .mbsc-ios.mbsc-datepicker-inline {

@@ -5,12 +5,6 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import 'vue-toastification/dist/index.css'
 import './assets/scss/main.scss'
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(registration => registration.unregister())
-  })
-}
-
 import { createApp } from 'vue'
 import { vuetify } from './plugins/vuetify'
 import pinia from './store'
@@ -21,31 +15,11 @@ import { QuillEditor } from '@vueup/vue-quill'
 import Toast from 'vue-toastification'
 import { Amplify } from 'aws-amplify'
 import amplifyConfig from './configs/amplify-config'
+import { toastOptions } from '@/plugins/toast'
 
-Amplify.configure(amplifyConfig)
+Amplify.configure(amplifyConfig  as any)
 const app = createApp(App)
-const toastOptions = {
-  position: 'bottom-center',
-  timeout: 5000,
-  closeOnClick: true,
-  pauseOnFocusLoss: false,
-  pauseOnHover: true,
-  draggable: false,
-  draggablePercent: 0.6,
-  showCloseButtonOnHover: true,
-  hideProgressBar: false,
-  closeButton: 'button',
-  icon: true,
-  rtl: false,
-  transition: 'Vue-Toastification__bounce',
-  maxToasts: 1,
-  newestOnTop: true,
-  containerClassName: 'toast-container-compact',
-  toastClassName: 'toast-compact',
-  containerStyle: {
-    bottom: '70px'
-  }
-}
+
 app.use(router)
 app.use(vuetify)
 app.use(pinia)
