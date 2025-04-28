@@ -41,6 +41,11 @@ export const getRouteDirectionsAPI = async (payload: any) => {
 export const getRouteAPI = async (payload: any) => {
   return instance.post(`/routes/route`, payload)
 }
+export const responsesMessageAPI = async (message: string) => {
+  return instance.get(`/responses/message`, {
+    params: { message }
+  })
+}
 
 
 // 채팅 API 함수 추가

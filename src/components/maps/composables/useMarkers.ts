@@ -2,7 +2,11 @@ import { ref, toRaw, onMounted, onBeforeUnmount } from 'vue'
 import { getPlacesListAPI } from '@/network/app'
 import { createLighterColor } from '../utils/mapHelpers'
 import type { Place, MarkerObject, MapBounds } from '@/types/map'
+import { shwPlaceDetail } from '@/composables/useRouter'
+import { useRoute, useRouter } from 'vue-router'
 
+const route = useRoute()
+const router = useRouter()
 // 마커 라이브러리를 미리 로드하기 위한 전역 변수
 let markerLibPromise: any = null
 
@@ -235,8 +239,8 @@ export function useMarkers(map: any, mapInfo: any, emit: any) {
     // 새 마커 활성화
     activeMarkerId.value = id
     applyActiveStyle(id)
-
-    emit('marker-click', id)
+    shwPlaceDetail(id, route, router)
+    // emit('marker-click', id)
   }
 
   /**

@@ -11,6 +11,10 @@ import useRadarState, { Place } from '@/components/radar/composables/useRadarSta
 import useInteractions from '@/components/radar/composables/useInteractions'
 import useGpsTransform from '@/components/radar/composables/useGpsTransform'
 
+defineOptions({
+  name: 'hotspots-radar'
+})
+
 // 상태 관리 스토어 초기화
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
@@ -237,6 +241,28 @@ onBeforeUnmount(() => {
             borderWidth: `${zoomLevelProperties.circleWidth}px`
           }"
         />
+
+        <!-- 레이더 중앙 포인트 -->
+        <div class="radar-center-point"></div>
+        <div class="radar-center-point-outer"></div>
+
+        <!-- 중앙 유저 표시 -->
+        <div class="user-thumbnail">
+          <v-avatar size="60">
+            <v-img
+              v-if="userStore.userInfo?.thumbnail_url"
+              :src="userStore.userInfo?.thumbnail_url"
+              cover
+            />
+          </v-avatar>
+          <div
+            v-if="globalStore.bearing"
+            class="direction-indicator"
+            :style="{ transform: `rotate(${globalStore.bearing}deg)` }"
+          />
+        </div>
+
+
         <!-- 장소 마커 표시 -->
         <div
           v-for="(place, index) in placeItems"
@@ -276,25 +302,6 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- 레이더 중앙 포인트 -->
-        <div class="radar-center-point"></div>
-        <div class="radar-center-point-outer"></div>
-
-        <!-- 중앙 유저 표시 -->
-        <div class="user-thumbnail">
-          <v-avatar size="60">
-            <v-img
-              v-if="userStore.userInfo?.thumbnail_url"
-              :src="userStore.userInfo?.thumbnail_url"
-              cover
-            />
-          </v-avatar>
-          <div
-            class="direction-indicator"
-            :style="{ transform: `rotate(${globalStore.bearing}deg)` }"
-          />
         </div>
       </div>
     </div>
@@ -599,6 +606,7 @@ onBeforeUnmount(() => {
     border-radius: 0 0 150px 150px;
     opacity: 0.1;
     z-index: 0;
+    transition: all 0.3s ease;
   }
 }
 

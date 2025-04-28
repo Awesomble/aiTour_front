@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onActivated, onMounted, onBeforeUnmount, defineProps, defineEmits, ref } from 'vue'
+import { onActivated, onMounted, onBeforeUnmount, defineProps, defineEmits, ref, nextTick } from 'vue'
 import { useMapStore } from '@/store'
 import { useMapInitialization } from './composables/useMapInitialization'
 import { useMarkers } from './composables/useMarkers'
@@ -147,7 +147,7 @@ onActivated(async () => {
   if (map.value) {
     await updateMapInfo() // 맵 경계 정보 업데이트
     await initializeIamMarker(map)
-    await initializeIamMarker(map)
+    await nextTick()
     await updateMarkerVisibility(zoom.value)
     await fetchPlacesByCategory()
   }

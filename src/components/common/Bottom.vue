@@ -14,23 +14,7 @@ const route = useRoute()
         :to="{ name: 'main-home' }"
         variant="text"
       >
-        <Home :size="24" :stroke-width="route.name === 'main-home' ? 2.5 : 1.8" />
-      </v-btn>
-
-      <v-btn
-        :color="route.name === 'main-map' ? 'primary' : 'gray'"
-        :to="{ name: 'main-map' }"
-        variant="text"
-      >
-        <MapPin :size="24" :stroke-width="route.name === 'main-map' ? 2.5 : 1.8" />
-      </v-btn>
-
-      <v-btn
-        :color="route.name === 'hotspots-radar' ? 'primary' : 'gray'"
-        :to="{ name: 'hotspots-radar' }"
-        variant="text"
-      >
-        <Radar :size="24" :stroke-width="route.name === 'hotspots-radar' ? 2.5 : 1.8" />
+        <Home :size="24" :stroke-width="route.name === 'main-home' ? 1.2 : 1" />
       </v-btn>
 
       <v-btn
@@ -38,7 +22,23 @@ const route = useRoute()
         :to="{ name: 'tour-planner' }"
         variant="text"
       >
-        <Sparkles :size="24" :stroke-width="route.name === 'tour-planner' ? 2.5 : 1.8" />
+        <Sparkles :size="24" :stroke-width="route.name === 'tour-planner' ? 1.2 : 1" />
+      </v-btn>
+
+      <v-btn
+        :color="route.name === 'main-map' ? 'primary' : 'gray'"
+        :to="{ name: 'main-map' }"
+        variant="text"
+      >
+        <MapPin :size="24" :stroke-width="route.name === 'main-map' ? 1.2 : 1" />
+      </v-btn>
+
+      <v-btn
+        :color="route.name === 'hotspots-radar' ? 'primary' : 'gray'"
+        :to="{ name: 'hotspots-radar' }"
+        variant="text"
+      >
+        <Radar :size="24" :stroke-width="route.name === 'hotspots-radar' ? 1.2 : 1" />
       </v-btn>
 
       <v-btn
@@ -46,7 +46,7 @@ const route = useRoute()
         :to="{ name: 'my-bag' }"
         variant="text"
       >
-        <Briefcase :size="24" :stroke-width="route.name === 'my-bag' ? 2.5 : 1.8" />
+        <Briefcase :size="24" :stroke-width="route.name === 'my-bag' ? 1.2 : 1" />
       </v-btn>
     </v-col>
   </v-row>
@@ -59,9 +59,9 @@ const route = useRoute()
   left: 0;
   width: 100%;
   height: 60px;
-  background-color: rgba(255, 255, 255, 0.1); // Transparent white
-  backdrop-filter: blur(3px); // Blur effect
-  -webkit-backdrop-filter: blur(3px); // For Safari
+  background-color: rgba(255, 255, 255, 0.8); // Transparent white
+  backdrop-filter: blur(2px); // Blur effect
+  -webkit-backdrop-filter: blur(2px); // For Safari
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -69,7 +69,7 @@ const route = useRoute()
   border-radius: 20px 20px 0 0;
   z-index: 9;
   border-top: 1px solid rgba(255, 255, 255, 0.8); // Light border for glass effect
-  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05); // Subtle shadow
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1); // Subtle shadow
 }
 
 .glass-btn {

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, type Ref } from 'vue'
 
-type DialogType = 'alert' | 'confirm';
+type DialogType = 'alert' | 'confirm'
 
 export const useDialogStore = defineStore('dialog', () => {
   const isOpen: Ref<boolean> = ref(false)

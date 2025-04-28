@@ -1,21 +1,18 @@
+<!-- CustomBottomSheet.vue -->
 <script setup lang="ts">
-import { ref, defineEmits, defineProps, watch, reactive, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, defineExpose } from 'vue'
+import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
+import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
 import dayjs from 'dayjs'
-// import { vMaska } from "maska/vue"
-// import type { MaskInputOptions } from "maska"
 
-const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'update', value: any): void
-}>()
-const props = defineProps({
-  isShow: {
-    type: Boolean,
-    required: true
-  }
-})
+const bottomSheet = ref(null)
+const instinctHeight = ref(250)
+const expandOnContentDrag = ref(true)
+const windowHeight = ref(0)
+const snapPoints = ref<(string | number)[]>([])
+
+// 폼 관련 상태
 const formRef = ref<HTMLFormElement | null>(null)
-const dialog = ref<boolean>(true)
 const iptRange = ref<string | null>(null)
 const iptAmount = ref<number | null>(null)
 const iptAdults = ref<number>(1)
@@ -23,57 +20,83 @@ const iptChildren = ref<number>(0)
 const iptInfants = ref<number>(0)
 const dateInput = ref<HTMLInputElement | null>(null)
 let mobiInstance = ref<any>(null)
+
 const rules = ref({
   required: (value: string) => !!value || 'Required.'
 })
-// const maskaOptions = reactive<MaskInputOptions>({
-//   mask: '9,99#',
-//   tokens: {
-//     '9': { pattern: /[0-9]/, repeated: true }
-//   },
-//   reversed: true
-// })
 
-watch(
-  () => props.isShow,
-  async (newVal) => {
-    dialog.value = newVal
-    if (newVal) {
-      await nextTick() // DOM이 업데이트된 후
-      initializeMobiscroll()
-    }
-  }
-)
-const close = () => {
-  emit('close')
+// 스냅포인트 업데이트
+const updateSnapPoints = () => {
+  windowHeight.value = window.innerHeight
+  snapPoints.value = [
+    windowHeight.value * 0.99,
+    windowHeight.value * 0.5,
+    250,
+    instinctHeight.value
+  ]
 }
+
+// 컴포넌트 마운트시 초기화
+onMounted(() => {
+  updateSnapPoints()
+  window.addEventListener('resize', updateSnapPoints)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateSnapPoints)
+  if (mobiInstance.value) {
+    mobiInstance.value.destroy()
+  }
+})
+
+const snapToPoint = (index: number) => {
+  bottomSheet.value?.snapToPoint(index)
+}
+
+const open = async () => {
+  if (!bottomSheet.value) return
+
+  bottomSheet.value.open()
+  // 열린 후 기본 스냅포인트로 이동
+  setTimeout(() => {
+    snapToPoint(1)
+  }, 200)
+
+  // Mobiscroll 초기화
+  await nextTick()
+  initializeMobiscroll()
+}
+
+const close = () => {
+  bottomSheet.value?.close()
+}
+
 const clearCall = () => {
   if (mobiInstance.value) {
     mobiInstance.value.setVal(null)
     iptRange.value = null
   }
-  iptAdults.value = 1;
-  iptChildren.value = 0;
-  iptInfants.value = 0;
-  iptAmount.value = null;
+  iptAdults.value = 1
+  iptChildren.value = 0
+  iptInfants.value = 0
+  iptAmount.value = null
 }
+
 const createCall = async () => {
   const { valid } = await formRef.value?.validate()
   if (!valid) return
-  console.log(iptAmount.value, typeof iptAmount.value)
-  emit(
-    'update',
-    {
-      range: iptRange.value,
-      amount: iptAmount.value,
-      adults: iptAdults.value,
-      children: iptChildren.value,
-      infants: iptInfants.value,
-    }
-    // `여행가간: ${iptRange.value} 여행총비용: ${Number(iptAmount.value?.replace(/,/g, '')) * 1440}원 여행자수는 어른: ${iptAdults.value} 어린이: ${iptChildren.value} 아기: ${iptInfants.value}`
-  )
+
+  console.log('Travel data:', {
+    range: iptRange.value,
+    amount: iptAmount.value,
+    adults: iptAdults.value,
+    children: iptChildren.value,
+    infants: iptInfants.value,
+  })
+
   close()
 }
+
 const initializeMobiscroll = () => {
   if (mobiInstance.value) {
     mobiInstance.value.destroy()
@@ -99,46 +122,42 @@ const initializeMobiscroll = () => {
     console.error('Mobiscroll input element not found')
   }
 }
-onMounted(async () => {
-  await nextTick()
-  initializeMobiscroll()
+
+defineExpose({
+  open,
+  close,
+  snapToPoint
 })
 </script>
 
 <template>
-  <v-dialog v-model="dialog" transition="dialog-bottom-transition" fullscreen persistent>
-    <v-toolbar color="#f8f8f8" dark flat elevation="0">
-      <v-btn color="black" icon="mdi-close" @click="close" />
-      <v-toolbar-title>Your travel plans</v-toolbar-title>
-      <v-spacer></v-spacer>
-      <!--      <v-toolbar-items>-->
-      <!--        <v-btn text="Save" variant="text" @click="close"></v-btn>-->
-      <!--      </v-toolbar-items>-->
-    </v-toolbar>
-    <v-card
-      color="#f8f8f8"
-      class="d-flex flex-column"
-      style="height: calc(100% - 68px); min-height: calc(100% - 68px); padding-bottom: 70px"
-    >
-      <v-card-text>
+  <BottomSheet
+    ref="bottomSheet"
+    :blocking="true"
+    :can-swipe-close="true"
+    :can-backdrop-close="false"
+    :expand-on-content-drag="expandOnContentDrag"
+    :snap-points="snapPoints"
+    :default-snap-point="1"
+    @instinct-height="updateSnapPoints"
+  >
+    <div class="bottom-sheet-wrapper">
+      <div class="header-area">
+        <v-toolbar color="#f8f8f8" dark flat elevation="0">
+          <v-btn color="black" icon="mdi-close" @click="close" />
+          <v-toolbar-title class="text-black">Your travel plans</v-toolbar-title>
+          <v-spacer></v-spacer>
+        </v-toolbar>
+      </div>
+
+      <div class="content-area">
         <v-form ref="formRef">
           <v-row dense>
             <v-col>
-              <v-text-field
-                ref="dateInput"
-                variant="outlined"
-                :rules="[rules.required]"
-                v-model="iptRange"
-                clearable2
-                readonly
-                placeholder="Select your travel dates"
-                v-if="false"
-              />
               <input id="dateInput" style="visibility: hidden" />
-              <!--              <v-btn icon="mdi-human-male-female-child" size="x-large" />-->
-              <!--              <v-btn icon="mdi-human-male-female" size="x-large" />-->
             </v-col>
           </v-row>
+
           <v-row class="box pa-4" dense>
             <v-col>
               <v-row dense>
@@ -168,7 +187,8 @@ onMounted(async () => {
                   </v-btn>
                 </v-col>
               </v-row>
-              <v-row dense>
+
+              <v-row dense class="mt-2">
                 <v-col cols="4">
                   <span class="text-subtitle-1 font-weight-bold">어린이</span>
                   <div class="text-caption">2~12세</div>
@@ -195,7 +215,8 @@ onMounted(async () => {
                   </v-btn>
                 </v-col>
               </v-row>
-              <v-row dense>
+
+              <v-row dense class="mt-2">
                 <v-col cols="4">
                   <span class="text-subtitle-1 font-weight-bold">유아</span>
                   <div class="text-caption">2세 미만</div>
@@ -224,14 +245,13 @@ onMounted(async () => {
               </v-row>
             </v-col>
           </v-row>
+
           <v-row dense class="box mt-6 pa-4">
-            <v-col cols="12" md="4" sm="6">
+            <v-col cols="12">
               <v-text-field
                 variant="outlined"
-                model-value="10.00"
                 prefix="$"
                 prepend-inner-icon="mdi-currency-usd"
-                :counter="10"
                 :rules="[rules.required]"
                 v-model="iptAmount"
                 clearable
@@ -243,29 +263,68 @@ onMounted(async () => {
             </v-col>
           </v-row>
         </v-form>
-      </v-card-text>
-      <v-spacer />
-      <v-card-actions
-        class="pa-4"
-        style="position: fixed; left: 0; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #e4e4e4;"
-      >
-        <v-btn variant="outlined" @click="clearCall">Clear</v-btn>
-        <v-spacer />
-        <v-btn class="w-33 btn-create" color="primary" @click="createCall"> Create </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </div>
+
+      <div class="fixed-bottom">
+        <v-row no-gutters align="center" class="bottom-actions pa-4">
+          <v-col cols="3">
+            <v-btn variant="outlined" @click="clearCall">Clear</v-btn>
+          </v-col>
+          <v-spacer />
+          <v-col cols="8">
+            <v-btn
+              color="blue-darken-2"
+              variant="elevated"
+              size="large"
+              elevation="1"
+              class="w-100"
+              @click="createCall"
+            >
+              <v-icon left class="mr-2">mdi-robot</v-icon>
+              AI 일정 생성
+            </v-btn>
+          </v-col>
+        </v-row>
+      </div>
+    </div>
+  </BottomSheet>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
+.bottom-sheet-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #f8f8f8;
+}
+
+.header-area {
+  border-bottom: 1px solid #eee;
+}
+
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
 .box {
   border-radius: 15px;
   background-color: #fff;
 }
 
-.btn-create {
-  background-color: #1976d2 !important; /* Primary 색상 */
-  color: white !important;
-  border: none !important;
+.fixed-bottom {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  border-top: 1px solid #e4e4e4;
+  z-index: 1;
+}
+
+/* 컨텐츠 영역 스타일링 */
+:deep([data-vsbs-content]) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 </style>

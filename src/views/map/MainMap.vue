@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { watch, onMounted, ref } from 'vue'
+import { watch, onMounted, ref, onActivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MainMap from '@/components/maps/index.vue'
 import { getMainCategoriesAPI } from '@/network/app'
 import { useVibration } from '@/composables/useVibration'
+import { shwPlaceDetail } from '@/composables/useRouter'
 
 defineOptions({
   name: 'main-map'
@@ -15,22 +16,6 @@ const vibrate = useVibration()
 const mapComponent = ref<any>(null)
 const mainCategoryList = ref<object[] | null>(null)
 const iptMainCategoryList = ref<number[]>([0])
-
-const handleMarkerClick = async (placeId: any) => {
-  // 현재 쿼리 파라미터에서 place만 제외한 다른 파라미터 유지
-  const { place: _, ...restQuery } = route.query
-
-  if (route.query.place) {
-    // 먼저 place를 제거한 URL로 히스토리 상태 대체 (히스토리 추가 없음)
-    await router.replace({ query: restQuery })
-
-    // 그 다음 새로운 place로 이동 (히스토리에 추가)
-    await router.push({ query: { ...restQuery, place: placeId } })
-  } else {
-    // place가 없는 경우 바로 이동
-    await router.push({ query: { ...restQuery, place: placeId } })
-  }
-}
 
 watch(
   iptMainCategoryList,
@@ -66,6 +51,8 @@ const getMainCategories = async () => {
   }
 }
 onMounted(() => {
+})
+onActivated(async () => {
   getMainCategories()
 })
 </script>
@@ -74,7 +61,6 @@ onMounted(() => {
   <v-container class="pa-0 h-100 w-100" style="max-width: 100%; position: relative">
     <MainMap
       ref="mapComponent"
-      @marker-click="handleMarkerClick"
     >
       <template #floating-controls>
         <!-- Category selector buttons -->
