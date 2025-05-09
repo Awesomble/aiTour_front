@@ -108,7 +108,6 @@ const operatingStatus = computed(() => {
 <style scoped lang="scss">
 /* Place header styling */
 .place-header {
-  padding: 4px 16px 12px;
   background-color: white;
 }
 

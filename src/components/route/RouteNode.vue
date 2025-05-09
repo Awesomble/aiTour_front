@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { createLighterColor } from '@/components/maps/utils/mapHelpers'
+import { createLighterColor } from '@/views/map/utils/mapHelpers'
 import { useRoute, useRouter } from 'vue-router'
 import { shwPlaceDetail } from '@/composables/useRouter'
 import { Footprints } from 'lucide-vue-next'

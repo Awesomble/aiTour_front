@@ -4,12 +4,12 @@ import { useUserStore, useGlobalStore } from '@/store'
 import { useRouter, useRoute } from 'vue-router'
 import { getPlacesListAPI } from '@/network/app'
 import { calculateRadiusBoundaries } from '@/composables/useGPS'
-import { createLighterColor } from '@/components/maps/utils/mapHelpers'
+import { createLighterColor } from '@/views/map/utils/mapHelpers'
 
 // Composables 임포트
-import useRadarState, { Place } from '@/components/radar/composables/useRadarState'
-import useInteractions from '@/components/radar/composables/useInteractions'
-import useGpsTransform from '@/components/radar/composables/useGpsTransform'
+import useRadarState, { Place } from '@/views/radar/composables/useRadarState'
+import useInteractions from '@/views/radar/composables/useInteractions'
+import useGpsTransform from '@/views/radar/composables/useGpsTransform'
 
 defineOptions({
   name: 'hotspots-radar'
@@ -141,7 +141,19 @@ watch(zoomLevel, () => {
 
 let timeoutInst: any = null
 
-watch([globalStore.lat, globalStore.lng], () => {
+
+// 방향 표시 컴포넌트가 globalStore.bearing 값 변경을 감지
+watch(
+  () => globalStore.bearing,
+  (newBearing) => {
+    console.log('방향 변경:', newBearing)
+  }
+)
+
+watch(
+  [() => globalStore.lat, () => globalStore.lng],
+  () => {
+  console.log('wow', globalStore.lat, globalStore.lng)
   // 기존 타이머가 있으면 취소
   if (timeoutInst) {
     clearTimeout(timeoutInst)
@@ -186,14 +198,6 @@ onMounted(() => {
     window.addEventListener('resize', () => updateContainerSize(radarContainer))
   }
 })
-
-// 방향 표시 컴포넌트가 globalStore.bearing 값 변경을 감지
-watch(
-  () => globalStore.bearing,
-  (newBearing) => {
-    console.log('방향 변경:', newBearing)
-  }
-)
 
 onActivated(() => {
   updateContainerSize(radarContainer)

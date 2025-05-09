@@ -151,6 +151,7 @@ onBeforeUnmount(() => {
   height: 100vh!important;
   padding: 50px 12px 16px;
   top: 0!important;
+  z-index: 99999!important;
 }
 
 .profile-section {

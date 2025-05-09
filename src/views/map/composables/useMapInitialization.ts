@@ -344,16 +344,16 @@ export function useMapInitialization(
     // 애니메이션 설정 적용
     map.value.panTo(location, mapConfig.animationOptions)
 
-    const targetZoom = customZoom || props.initialZoom
-    const currentZoom = map.value.getZoom()
-
-    if (targetZoom !== currentZoom) {
-      setTimeout(() => {
-        if (map.value) {
-          map.value.setZoom(targetZoom)
-        }
-      }, mapConfig.animationOptions.duration / 2)
-    }
+    // const targetZoom = customZoom || props.initialZoom
+    // const currentZoom = map.value.getZoom()
+    //
+    // if (targetZoom !== currentZoom) {
+    //   setTimeout(() => {
+    //     if (map.value) {
+    //       map.value.setZoom(targetZoom)
+    //     }
+    //   }, mapConfig.animationOptions.duration / 2)
+    // }
   }
 
   /**

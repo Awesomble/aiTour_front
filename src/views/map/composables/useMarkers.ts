@@ -1,12 +1,9 @@
-import { ref, toRaw, onMounted, onBeforeUnmount } from 'vue'
+import { ref, toRaw, onBeforeUnmount } from 'vue'
 import { getPlacesListAPI } from '@/network/app'
 import { createLighterColor } from '../utils/mapHelpers'
 import type { Place, MarkerObject, MapBounds } from '@/types/map'
 import { shwPlaceDetail } from '@/composables/useRouter'
-import { useRoute, useRouter } from 'vue-router'
 
-const route = useRoute()
-const router = useRouter()
 // 마커 라이브러리를 미리 로드하기 위한 전역 변수
 let markerLibPromise: any = null
 
@@ -14,7 +11,7 @@ let markerLibPromise: any = null
  * 지도 마커 관리를 위한 컴포저블 함수
  * 장소 데이터를 받아 지도에 마커를 표시하고 관리하는 기능을 제공합니다.
  */
-export function useMarkers(map: any, mapInfo: any, emit: any) {
+export function useMarkers(map: any, mapInfo: any, emit: any, route: any, router: any) {
   // 상수 정의
   const DEFAULT_FETCH_PAGE = 1
   const DEFAULT_FETCH_LIMIT = 50

@@ -2,7 +2,7 @@
 import Header from '@/components/common/Header.vue'
 import Bottom from '@/components/common/Bottom.vue'
 import Navigation from '@/components/common/Navigation.vue'
-import PlaceDetail from '@/components/dialogs/PlaceDetail.vue'
+import PlaceDetail from '@/components/dialogs/placeDetail/index.vue'
 import { nextTick, onMounted, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 

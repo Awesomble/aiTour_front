@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { watch, onMounted, ref, onActivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MainMap from '@/components/maps/index.vue'
+import Map from './Map.vue'
 import { getMainCategoriesAPI } from '@/network/app'
 import { useVibration } from '@/composables/useVibration'
-import { shwPlaceDetail } from '@/composables/useRouter'
 
 defineOptions({
   name: 'main-map'
@@ -59,7 +58,7 @@ onActivated(async () => {
 
 <template>
   <v-container class="pa-0 h-100 w-100" style="max-width: 100%; position: relative">
-    <MainMap
+    <Map
       ref="mapComponent"
     >
       <template #floating-controls>
@@ -87,7 +86,7 @@ onActivated(async () => {
           @click="goToMyLocation"
         />
       </template>
-    </MainMap>
+    </Map>
   </v-container>
 </template>
 

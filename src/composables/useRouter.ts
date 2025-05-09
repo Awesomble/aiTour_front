@@ -1,4 +1,7 @@
 export const shwPlaceDetail = async (placeId: string, route: any, router: any) => {
+  console.log('shwPlaceDetail', placeId)
+  console.log(route, router)
+  if (!route || !router) return
   // 현재 쿼리 파라미터에서 place만 제외한 다른 파라미터 유지
   const { place: _, ...restQuery } = route.query
   if (route.query.place) {

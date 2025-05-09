@@ -35,23 +35,37 @@ export const useIamMarker = () => {
 
   /**
    * IAM 마커 초기화 함수
+   * @param mapRef - map ref 객체
    */
-  const initializeIamMarker = async (map: any) => {
+  const initializeIamMarker = async (mapRef: any) => {
+    console.log('initializeIamMarker called with:', mapRef)
+
     try {
-      if (!map.value) {
+      // mapRef 자체가 ref 객체인지 확인하고 적절히 처리
+      const mapValue = mapRef && mapRef.value ? mapRef.value : mapRef
+
+      if (!mapValue) {
         console.warn('지도 인스턴스가 없어 IAM 마커를 초기화할 수 없습니다')
         return null
       }
 
-      const mapInstance = toRaw(map.value)
+      const mapInstance = toRaw(mapValue)
+      console.log('mapInstance:', mapInstance)
+
+      // 위치 정보 확인
       const position = { lat: globalStore.lat, lng: globalStore.lng }
+      console.log('Current position:', position)
 
       if (!isValidPosition(position)) {
         console.warn('유효하지 않은 위치로 IAM 마커를 초기화할 수 없습니다', position)
+        // 유효하지 않은 경우 기본 위치 사용 (선택사항)
+        // position = { lat: 37.5663, lng: 126.9779 }
         return null
       }
 
-      const { AdvancedMarkerElement } = await loadMarkerLibrary()
+      const markerLib = await loadMarkerLibrary()
+      console.log('Marker library loaded:', markerLib)
+      const { AdvancedMarkerElement } = markerLib
 
       // 이미 마커가 있으면 제거
       if (iamMarker.value) {
@@ -60,10 +74,10 @@ export const useIamMarker = () => {
       }
 
       // IAM 마커 HTML 요소 생성
-      const iamMarkerHTML = document.createElement('div')
+      const iamMarkerHTML = document.createElement('div') as HTMLElement
       iamMarkerHTML.className = 'iam'
 
-      const directionIndicator = document.createElement('div')
+      const directionIndicator = document.createElement('div') as HTMLElement
       directionIndicator.className = 'direction-indicator'
 
       iamMarkerHTML.appendChild(directionIndicator)
@@ -77,6 +91,8 @@ export const useIamMarker = () => {
         zIndex: 9999,
         title: '내 위치'
       })
+
+      console.log('IAM marker created:', iamMarker.value)
       isMarkerVisible.value = true
       updateMarkerDirection()
 

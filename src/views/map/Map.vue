@@ -6,8 +6,10 @@ import { useMarkers } from './composables/useMarkers'
 import { useDirections } from './composables/useDirections'
 import { useIamMarker } from './composables/useIamMarker'
 import { useGPS } from './composables/useGPS'
-import { onBeforeRouteUpdate } from 'vue-router'
+import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 
+const route = useRoute()
+const router = useRouter()
 const props = defineProps({
   initialCenter: {
     type: Object,
@@ -80,12 +82,19 @@ const {
   onZoomChanged,
   onMapIdle,
   onMapInfoUpdated,
-  onMapLoaded: (mapInstance) => {
+  onMapLoaded: async (mapInstance) => {
     // 맵 로드 완료 후 처리
     emit('map-loaded', mapInstance)
 
     // 초기화 완료 플래그 설정
     mapInitialized.value = true
+    if (map.value) {
+      await updateMapInfo() // 맵 경계 정보 업데이트
+      await initializeIamMarker(map)
+      await nextTick()
+      await updateMarkerVisibility(zoom.value)
+      await fetchPlacesByCategory()
+    }
   }
 })
 
@@ -100,7 +109,7 @@ const {
   removeMarkerByPlaceId,
   fetchPlacesByCategory,
   loadMarkerLibrary,
-} = useMarkers(map, mapInfo, emit)
+} = useMarkers(map, mapInfo, emit, route, router)
 
 // Iam마커 컴포저블
 const { iamMarker, initializeIamMarker, updatePosition } = useIamMarker()
@@ -110,7 +119,7 @@ const { clearDirections, findDirections } = useDirections(map)
 
 onMounted(async () => {
   // GPS 초기화
-  initGPS()
+  // initGPS()
 
   // 마커 라이브러리 미리 로드 (병렬 처리)
   const markerLibPromise = loadMarkerLibrary()
@@ -136,7 +145,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  cleanupGPS()
+  // cleanupGPS()
   cleanupMapEventListeners()
   clearAllMarkers()
   clearDirections()
@@ -169,7 +178,7 @@ defineExpose({
 })
 
 onBeforeRouteUpdate(() => {
-  clearDirections()
+  // clearDirections()
 })
 </script>
 

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Clock, DollarSign, MapPin, MessageSquare, ShieldCheck, Users } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -12,17 +11,23 @@ const props = defineProps({
     require: true
   }
 })
-defineEmits(['showchatpop'])
+const emit = defineEmits(['showchatpop'])
 
+// 이벤트 객체를 사용하지 않는 순수 함수
+const triggerChatPopup = () => {
+  emit('showchatpop')
+}
+
+// 버튼 클릭 전용 핸들러 (이벤트 전파 방지 없이)
+const onButtonClick = () => {
+  triggerChatPopup()
+}
 </script>
 
 <template>
-
   <div class="info-sections">
-    <!-- 실시간 채팅 배너 -->
-    <div class="chat-banner"
-         @click="$emit('showchatpop')"
-    >
+    <!-- 실시간 채팅 배너: 클릭시 단순히 함수만 호출, 이벤트 객체 사용 X -->
+    <div class="chat-banner" @click="triggerChatPopup">
       <div class="chat-banner-icon">
         <MessageSquare size="22" />
       </div>
@@ -36,7 +41,8 @@ defineEmits(['showchatpop'])
           </div>
         </div>
       </div>
-      <button class="chat-banner-button">패널 열기</button>
+      <!-- 버튼 클릭시도 같은 함수 실행 -->
+      <button class="chat-banner-button" @click="onButtonClick">패널 열기</button>
     </div>
 
     <!-- Business hours info -->
@@ -54,7 +60,9 @@ defineEmits(['showchatpop'])
         <MapPin size="20" />
       </div>
       <div class="info-content">
-        <span class="info-text">서울특별시 중구 세종대로14길 17-5</span>
+        <span class="info-text">{{
+          props.detail?.address || '서울특별시 중구 세종대로14길 17-5'
+        }}</span>
       </div>
     </div>
 
@@ -173,9 +181,15 @@ defineEmits(['showchatpop'])
 }
 
 @keyframes pulse {
-  0% { opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { opacity: 0.4; }
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
 }
 
 .chat-banner-text {
@@ -271,12 +285,6 @@ defineEmits(['showchatpop'])
   margin-top: 16px;
   border-top: 1px solid #f0f0f0;
   padding: 16px;
-}
-
-.chat-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
 }
 
 .chat-icon {

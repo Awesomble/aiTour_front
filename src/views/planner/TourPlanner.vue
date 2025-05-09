@@ -99,7 +99,7 @@ const showMapCall = () => {
 
 // 컴포넌트 언마운트 시 정리
 onUnmounted(() => {
-  // 이벤트 리스너 정리
+  // 이벤트 리스너 정리11
   cleanupFns.forEach(cleanup => cleanup())
 
   // 활성 이벤트 소스 정리
@@ -113,10 +113,10 @@ onUnmounted(() => {
 <template>
   <v-container class="splash-container pa-0 ma-0" fluid>
     <!-- 결과 표시 영역 -->
-<!--    <template v-if="streamData.jsonData?.length">-->
-    <div v-if="DATA?.length" class="pt-16">
-      <RouteList :places="DATA" />
-    </div>
+    <template v-if="streamData.jsonData?.length">
+<!--    <div v-if="DATA?.length" class="pt-16">-->
+      <RouteList :places="streamData.jsonData" />
+    </template>
 
     <!-- 초기 화면 -->
     <template v-else>

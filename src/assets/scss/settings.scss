@@ -8,9 +8,10 @@
 // @use 'vuetify' with (
 //   $color-pack: false
 // );
-
+//골드 옐로우 (#FFD700): 산티아고 순례길의 노란 화살표를 상징하며, 활기찬 분위기를 더합니다.
+//포레스트 그린 (#228B22): 순례길을 따라 펼쳐진 자연 풍경을 반영하며, 모험적인 느낌을 줍니다.
 :root {
-  --primary: #1483C2;
+  --primary: #0047AB;
   --secondary: #fdcb6e;
   --success: #00cec9;
   --warning: #2d3436;
@@ -149,4 +150,8 @@
 /* Ensure high z-index */
 .Vue-Toastification__container {
   z-index: 9999 !important;
+}
+
+.vel-modal {
+  z-index: 99998!important;
 }

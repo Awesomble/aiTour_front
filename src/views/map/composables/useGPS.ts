@@ -4,7 +4,7 @@ import { useGlobalStore } from '@/store'
 
 export function useGPS() {
   const globalStore = useGlobalStore()
-  const GPS_UPDATE_INTERVAL = 300
+  const GPS_UPDATE_INTERVAL = 500
   let GPSInter: any = null
 
   const setGPS = () => {
@@ -20,7 +20,7 @@ export function useGPS() {
   const initGPS = () => {
     setGPS()
     if (GPSInter) cleanupGPS()
-    GPSInter = window.setInterval(setGPS, GPS_UPDATE_INTERVAL)
+    GPSInter = setInterval(setGPS, GPS_UPDATE_INTERVAL)
   }
 
   const cleanupGPS = () => {
